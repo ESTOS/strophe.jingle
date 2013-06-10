@@ -170,6 +170,10 @@ Strophe.addConnectionPlugin('jingle', {
         // get stun and turn configuration from server via xep-0215
         // uses time-limited credentials as described in
         // https://docs.google.com/document/d/1mG7eXFQ5o-ypMWQ1IzdkBQL0UBkLN1xXUJhJcIF5ujQ/edit
+        //
+        // see https://code.google.com/p/prosody-modules/source/browse/mod_turncredentials/mod_turncredentials.lua
+        // for a prosody module which implements this
+        //
         // currently, this doesn't work with updateIce and therefore credentials with a long
         // validity have to be fetched before creating the peerconnection
         // TODO: implement refresh via updateIce as described in
