@@ -278,6 +278,11 @@ function arrangeVideos(selector) {
     });
 }
 
+function noStunCandidates(event) {
+    setStatus('webrtc did not encounter stun candidates, NAT traversal will not work');
+    console.warn('webrtc did not encounter stun candidates, NAT traversal will not work');
+}
+
 $(window).bind('beforeunload', function() {
     if (connection && connection.connected) {
         // ensure signout
@@ -320,6 +325,7 @@ $(document).ready(function() {
     $(document).bind('remotestreamadded', onRemoteStreamAdded);
     $(document).bind('remotestreamremoved', onRemoteStreamRemoved);
     $(document).bind('iceconnectionstatechange', onIceConnectionStateChanged);
+    $(document).bind('nostuncandidates', noStunCandidates);
     if (RTC != null) {
         RTCPeerconnection = RTC.peerconnection;
         if (RTC.browser == 'firefox') {

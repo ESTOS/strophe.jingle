@@ -220,7 +220,7 @@ JingleSession.prototype.sendIceCandidate = function(candidate) {
         console.log('Have we encountered any relay candidates? ' + this.hadturncandidate);
 
         if (!this.hadstuncandidate) {
-            $(document).trigger('warn', ['Warnung: Keine Verbindung zum STUN-Server, NAT-Traversal wird nicht funktionieren.']);
+            $(document).trigger('nostuncandidates');
         }
     }
 };
