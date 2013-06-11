@@ -41,12 +41,15 @@ function onConnect(status) {
             connection.disco.addIdentity('client', 'web');
             connection.disco.addFeature(Strophe.NS.DISCO_INFO);
         }
-
-        doJoin();
-        setTimeout(function() {
-               $(window).bind('hashchange', onHashChange);
-        }, 500);
+        $(document).trigger('connected');
     }
+}
+
+function onConnected(event) {
+    doJoin();
+    setTimeout(function() {
+           $(window).bind('hashchange', onHashChange);
+    }, 500);
 }
 
 function doJoin() {
@@ -315,7 +318,9 @@ $(document).ready(function() {
     connection.jingle.AUTOACCEPT = AUTOACCEPT;
     connection.jingle.ice_config = ice_config;
     connection.jingle.MULTIPARTY = MULTIPARTY;
+    connection.jingle.pc_constraints = RTC.pc_constraints;
 
+    $(document).bind('connected', onConnected);
     $(document).bind('mediaready', onMediaReady);
     $(document).bind('mediafailure', onMediaFailure);
     $(document).bind('callincoming', onCallIncoming);

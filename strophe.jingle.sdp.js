@@ -319,7 +319,9 @@ SDP.prototype.jingle2media = function(content) {
     content.find('transport>candidate').each(function() {
         media += SDPUtil.candidateFromJingle(this);
     });
-    tmp = content.find('description>ssrc');
+
+    // proprietary mapping of a=ssrc lines
+    tmp = content.find('description>ssrc[xmlns="http://estos.de/ns/ssrc"]');
     if (tmp.length) {
         media += 'a=ssrc:' + ssrc + ' cname:' + tmp.attr('cname') + '\r\n';
         media += 'a=ssrc:' + ssrc + ' msid:' + tmp.attr('msid') + '\r\n';
@@ -475,10 +477,11 @@ SDPUtil = {
         return line;
     },
     parse_ssrc: function(desc) {
+        // proprietary mapping of a=ssrc lines
         // TODO: see "Jingle RTP Source Description" by Juberti and P. Thatcher on google docs
         // and parse according to that
         var lines = desc.split('\r\n'),
-            data = {};
+            data = {xmlns: 'http://estos.de/ns/ssrc'};
         for (var i = 0; i < lines.length; i++) {
             if (lines[i].substring(0, 7) == 'a=ssrc:') {
                 var idx = lines[i].indexOf(' ');
