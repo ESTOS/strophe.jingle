@@ -146,6 +146,7 @@ JingleSession.prototype.active = function() {
 };
 
 JingleSession.prototype.sendIceCandidate = function(candidate) {
+    var ob = this;
     if (candidate && !this.lasticecandidate) {
         var ice = SDPUtil.iceparams(this.localSDP.media[candidate.sdpMLineIndex], this.localSDP.session),
             jcand = SDPUtil.candidateToJingle(candidate.candidate);
@@ -208,6 +209,8 @@ JingleSession.prototype.sendIceCandidate = function(candidate) {
                     }
                 },
                 function(stanza) {
+                    ob.state = 'error';
+                    ob.peerconnection.close();
                     console.error('session initiate error');
                     if (callback) {
                         callback(false, stanza);
@@ -240,6 +243,7 @@ JingleSession.prototype.sendOffer = function(callback) {
 
 JingleSession.prototype.createdOffer = function(sdp, callback) {
     console.log('createdOffer', sdp);
+    var ob = this;
     this.localSDP = new SDP(sdp.sdp);
     this.localSDP.mangle();
     if (this.usetrickle) {
@@ -258,6 +262,8 @@ JingleSession.prototype.createdOffer = function(sdp, callback) {
                 }
             },
             function(stanza) {
+                ob.state = 'error';
+                ob.peerconnection.close();
                 console.error('session initiate error');
                 if (callback) {
                     callback(false, stanza);
