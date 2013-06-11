@@ -318,6 +318,7 @@ $(document).ready(function() {
     connection.jingle.AUTOACCEPT = AUTOACCEPT;
     connection.jingle.ice_config = ice_config;
     connection.jingle.MULTIPARTY = MULTIPARTY;
+    connection.jingle.pc_constraints = RTC.pc_constraints;
 
     $(document).bind('connected', onConnected);
     $(document).bind('mediaready', onMediaReady);
