@@ -100,6 +100,13 @@ function onPresence(pres) {
     if (type != null) {
         return true;
     }
+    if ($(pres).find('>x[xmlns="http://jabber.org/protocol/muc#user"]>status[code="201"]').length) {
+        // http://xmpp.org/extensions/xep-0045.html#createroom-instant
+        var create = $iq({type: 'set', to:roomjid})
+                .c('query', {xmlns: 'http://jabber.org/protocol/muc#owner'})
+                .c('x', {xmlns: 'jabber:x:data', type: 'submit'});
+        connection.send(create); // fire away
+    }
     if (from == myroomjid) {
         onJoinComplete();
     } else { // TODO: prevent duplicates
