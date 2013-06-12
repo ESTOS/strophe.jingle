@@ -53,20 +53,26 @@ function onConnected(event) {
 }
 
 function doJoin() {
-    var roomnode, pres;
+    var roomnode = null, 
+        pres;
     if (location.hash.length > 1) {
         roomnode = location.hash.substr(1).toLowerCase();
-        if (!(roomnode.indexOf('@') == -1 && roomnode.indexOf('/') == -1)) {
-            setStatus('invalid location, must not contain "@" or "/"');
+        if (roomnode.indexOf('/') != -1) {
+            setStatus('invalid location, must not contain "/"');
             connection.disconnect();
             return;
+        }
+        if (roomnode.indexOf('@') != -1) { // allow #room@host
+            roomjid = roomnode;
         }
     } else {
         roomnode = Math.random().toString(36).substr(2, 8);
         location.hash = roomnode;
     }
-    setStatus('location hash: ' + location.hash);
-    roomjid = roomnode + '@' + CONFERENCEDOMAIN;
+    if (roomjid == null) {
+        roomjid = roomnode + '@' + CONFERENCEDOMAIN;
+    }
+    setStatus('Joining ' + location.hash);
     myroomjid = roomjid + '/' + Strophe.getNodeFromJid(connection.jid);
     list_members = new Array();
     console.log('joining', roomjid);
