@@ -53,20 +53,26 @@ function onConnected(event) {
 }
 
 function doJoin() {
-    var roomnode, pres;
+    var roomnode = null, 
+        pres;
     if (location.hash.length > 1) {
         roomnode = location.hash.substr(1).toLowerCase();
-        if (!(roomnode.indexOf('@') == -1 && roomnode.indexOf('/') == -1)) {
-            setStatus('invalid location, must not contain "@" or "/"');
+        if (roomnode.indexOf('/') != -1) {
+            setStatus('invalid location, must not contain "/"');
             connection.disconnect();
             return;
+        }
+        if (roomnode.indexOf('@') != -1) { // allow #room@host
+            roomjid = roomnode;
         }
     } else {
         roomnode = Math.random().toString(36).substr(2, 8);
         location.hash = roomnode;
     }
-    setStatus('location hash: ' + location.hash);
-    roomjid = roomnode + '@' + CONFERENCEDOMAIN;
+    if (roomjid == null) {
+        roomjid = roomnode + '@' + CONFERENCEDOMAIN;
+    }
+    setStatus('Joining ' + location.hash);
     myroomjid = roomjid + '/' + Strophe.getNodeFromJid(connection.jid);
     list_members = new Array();
     console.log('joining', roomjid);
@@ -93,6 +99,13 @@ function onPresence(pres) {
         type = pres.getAttribute('type');
     if (type != null) {
         return true;
+    }
+    if ($(pres).find('>x[xmlns="http://jabber.org/protocol/muc#user"]>status[code="201"]').length) {
+        // http://xmpp.org/extensions/xep-0045.html#createroom-instant
+        var create = $iq({type: 'set', to:roomjid})
+                .c('query', {xmlns: 'http://jabber.org/protocol/muc#owner'})
+                .c('x', {xmlns: 'jabber:x:data', type: 'submit'});
+        connection.send(create); // fire away
     }
     if (from == myroomjid) {
         onJoinComplete();
@@ -134,10 +147,6 @@ function onJoinComplete() {
     for (i = 0; i < num; i++) {
         connection.jingle.initiate(list_members[i], myroomjid);
     }
-}
-
-function doConnect() {
-    connection.connect(DOMAIN, null, onConnect);
 }
 
 function onMediaReady(event, stream) {
@@ -336,8 +345,8 @@ $(document).ready(function() {
         if (RTC.browser == 'firefox') {
             connection.jingle.media_constraints.mandatory['MozDontOfferDataChannel'] = true;
         }
-        setStatus('please allow access to microphone and camera');
-        getUserMediaWithConstraints();
+        //setStatus('please allow access to microphone and camera');
+        //getUserMediaWithConstraints();
     } else {
         setStatus('webrtc capable browser required');
     }
