@@ -136,10 +136,6 @@ function onJoinComplete() {
     }
 }
 
-function doConnect() {
-    connection.connect(DOMAIN, null, onConnect);
-}
-
 function onMediaReady(event, stream) {
     localStream = stream;
     connection.jingle.localStream = stream;
@@ -336,8 +332,8 @@ $(document).ready(function() {
         if (RTC.browser == 'firefox') {
             connection.jingle.media_constraints.mandatory['MozDontOfferDataChannel'] = true;
         }
-        setStatus('please allow access to microphone and camera');
-        getUserMediaWithConstraints();
+        //setStatus('please allow access to microphone and camera');
+        //getUserMediaWithConstraints();
     } else {
         setStatus('webrtc capable browser required');
     }
