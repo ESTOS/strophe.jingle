@@ -88,9 +88,11 @@ SDP.prototype.toJingle = function(elem, thecreator) {
             }
             elem.up(); // end of encryption
 
+            /*
             if (ssrc) {
                 elem.c('ssrc', SDPUtil.parse_ssrc(this.media[i])).up(); // ssrc is part of description
             }
+            */
 
             if (SDPUtil.find_line(this.media[i], 'a=rtcp-mux')) {
                 elem.c('rtcp-mux').up();
