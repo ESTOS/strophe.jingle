@@ -61,7 +61,7 @@ function setupRTC() {
     return RTC;
 }
 
-function getUserMediaWithConstraints(resolution, bandwidth) {
+function getUserMediaWithConstraints(resolution, bandwidth, fps) {
     var constraints = {audio: true, video: true};
     // see https://code.google.com/p/chromium/issues/detail?id=143631#c9 for list of supported resolutions
     switch (resolution) {
@@ -95,6 +95,10 @@ function getUserMediaWithConstraints(resolution, bandwidth) {
     }
     if (bandwidth) { // doesn't work currently, see webrtc issue 1846
         constraints.video.optional = [{bandwidth: bandwidth}];
+    }
+    if (fps) { // for some cameras it might be necessary to request 30fps
+        // so they choose 30fps mjpg over 10fps yuy2
+        constraints.video.mandatory['minFrameRate'] = fps;
     }
     /*
     constraints = {
