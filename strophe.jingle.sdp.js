@@ -88,11 +88,9 @@ SDP.prototype.toJingle = function(elem, thecreator) {
             }
             elem.up(); // end of encryption
 
-            /*
             if (ssrc) {
                 elem.c('ssrc', SDPUtil.parse_ssrc(this.media[i])).up(); // ssrc is part of description
             }
-            */
 
             if (SDPUtil.find_line(this.media[i], 'a=rtcp-mux')) {
                 elem.c('rtcp-mux').up();
@@ -212,8 +210,12 @@ SDP.prototype.fromJingle = function(stanza) {
         'o=- ' + '1923518516' + ' 2 IN IP4 0.0.0.0\r\n' +// FIXME
         's=-\r\n' +
         't=0 0\r\n';
-
-    //this.raw += "a=group:BUNDLE audio video\r\n";
+    // http://tools.ietf.org/html/draft-ietf-mmusic-sdp-bundle-negotiation-04#section-8
+    // assume all contents are in the same bundle group, can be improved upon later
+    if ($(stanza).find('>transport').filter(function(idx, transport) { return $(transport).attr('ufrag') == $(stanza).find('>transport').attr('ufrag'); }).length == $(stanza).find('>transport').length
+            && $(stanza).find('>transport').filter(function(idx, transport) { return $(transport).attr('ufrag') == $(stanza).find('>transport').attr('ufrag'); }).length == $(stanza).find('>transport').length) {
+        this.raw += 'a=group:BUNDLE ' + $.map(stanza, function(content) { return $(content).attr('name'); }).join(' ') + '\r\n';
+    }
     this.session = this.raw;
     stanza.each(function() {
         var m = obj.jingle2media($(this));
