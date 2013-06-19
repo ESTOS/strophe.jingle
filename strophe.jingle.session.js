@@ -531,6 +531,7 @@ JingleSession.prototype.sendMute = function(muted, content) {
     if (content) {
         info.attrs({'name': content});
     }
+    this.connection.send(info);
 };
 
 JingleSession.prototype.sendRinging = function() {
@@ -541,4 +542,5 @@ JingleSession.prototype.sendRinging = function() {
            initiator: this.initiator,
            sid: this.sid });
     info.c('ringing', {xmlns: 'urn:xmpp:jingle:apps:rtp:info:1'});
+    this.connection.send(info);
 };
