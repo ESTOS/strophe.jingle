@@ -100,7 +100,7 @@ Strophe.addConnectionPlugin('jingle', {
             sess.terminate();
             this.terminate(sess.sid);
             if ($(iq).find('>jingle>reason>').length) {
-                $(document).trigger('callterminated', [sess.sid], $(iq).find('>jingle>reason>')[0]);
+                $(document).trigger('callterminated', [sess.sid, $(iq).find('>jingle>reason>')[0]]);
             } else {
                 $(document).trigger('callterminated', [sess.sid]);
             }
