@@ -113,8 +113,14 @@ Strophe.addConnectionPlugin('jingle', {
             sess.addIceCandidate($(iq).find('>jingle>content'));
             break;
         case 'session-info':
-            if ($(iq).find('>jingle>ringing[xmlns="urn:xmpp:jingle:apps:rtp:info:1"]')) {
-                $(document).trigger('callringing.jingle', [sess.sid]);
+            if ($(iq).find('>jingle>ringing[xmlns="urn:xmpp:jingle:apps:rtp:info:1"]').length) {
+                $(document).trigger('ringing.jingle', [sess.sid]);
+            } else if ($(iq).find('>jingle>mute[xmlns="urn:xmpp:jingle:apps:rtp:info:1"]').length) {
+                var affected = $(iq).find('>jingle>mute[xmlns="urn:xmpp:jingle:apps:rtp:info:1"]').attr('name');
+                $(document).trigger('mute.jingle', [sess.sid, affected]);
+            } else if ($(iq).find('>jingle>unmute[xmlns="urn:xmpp:jingle:apps:rtp:info:1"]').length) {
+                var affected = $(iq).find('>jingle>unmute[xmlns="urn:xmpp:jingle:apps:rtp:info:1"]').attr('name');
+                $(document).trigger('unmute.jingle', [sess.sid, affected]);
             }
             break;
         default:
