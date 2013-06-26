@@ -500,7 +500,7 @@ JingleSession.prototype.createdAnswer = function(sdp, provisional) {
     }
 };
 
-JingleSession.prototype.sendTerminate = function(reason) {
+JingleSession.prototype.sendTerminate = function(reason, text) {
     var obj = this,
         term = $iq({to: this.peerjid,
                type: 'set'})
@@ -510,6 +510,10 @@ JingleSession.prototype.sendTerminate = function(reason) {
            sid: this.sid})
         .c('reason')
         .c(reason || 'success');
+        
+    if(text)
+        term.up().c('text').t(text);
+    
     this.connection.sendIQ(term,
                    function() {
                    console.log('terminate ack');

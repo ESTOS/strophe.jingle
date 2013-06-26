@@ -61,7 +61,7 @@ function setupRTC() {
     return RTC;
 }
 
-function getUserMediaWithConstraints(um, resolution, bandwidth) {
+function getUserMediaWithConstraints(um, resolution, bandwidth, fps) {
 
     var constraints = {audio: false, video: false};
 

@@ -100,7 +100,11 @@ Strophe.addConnectionPlugin('jingle', {
             sess.terminate();
             this.terminate(sess.sid);
             if ($(iq).find('>jingle>reason>').length) {
-                $(document).trigger('callterminated', [sess.sid, $(iq).find('>jingle>reason>')[0].tagName]);
+                $(document).trigger('callterminated', [
+                    sess.sid, 
+                    $(iq).find('>jingle>reason>')[0].tagName,
+                    $(iq).find('>jingle>reason>text').text()
+                ]);
             } else {
                 $(document).trigger('callterminated', [sess.sid]);
             }
@@ -135,19 +139,19 @@ Strophe.addConnectionPlugin('jingle', {
         sess.sendOffer(callback);
         return sess;
     },
-    terminate: function(sid, reason) { // terminate by sessionid (or all sessions)
+    terminate: function(sid, reason, text) { // terminate by sessionid (or all sessions)
         if (sid == null) {
             for (sid in this.sessions) {
-                if (this.sessions[sid].active()) {
-                    this.sessions[sid].sendTerminate(reason);
+                if(this.sessions[sid].state != 'ended'){
+                    this.sessions[sid].sendTerminate(reason||(!this.sessions[sid].active())?'cancel':null, text);
                     this.sessions[sid].terminate();
                 }
                 delete this.jid2session[this.sessions[sid].peerjid];
                 delete this.sessions[sid];
             }
         } else if (this.sessions.hasOwnProperty(sid)) {
-            if (this.sessions[sid].active()) {
-                this.sessions[sid].sendTerminate(reason);
+            if(this.sessions[sid].state != 'ended'){
+                this.sessions[sid].sendTerminate(reason||(!this.sessions[sid].active())?'cancel':null, text);
                 this.sessions[sid].terminate();
             }
             delete this.jid2session[this.sessions[sid].peerjid];
