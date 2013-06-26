@@ -10,4 +10,15 @@ Features:
 - tested with chrome and firefox.
 - trickle and non-trickle modes for ICE (XEP-0176). Even supports early candidates from peer using PRANSWER.
 - support for fetching time-limited STUN/TURN credentials through XEP-0215. [rfc5766-turn-server](https://code.google.com/p/rfc5766-turn-server/) is a TURN server which implements this method.
-- a sample demonstrating the use of this to build a federated multi-user conference (in full-mesh mode).
+- a sample demonstrating the use of this to build a federated multi-user conference (in full-mesh mode). 
+
+Events:
+- callincoming.jingle (sid)
+- callterminated.jingle (sid)
+- callringing.jingle (sid)
+- nostuncandidates.jingle
+- remotestreamadded.jingle (event, sid)
+- remotestreamremoved.jingle (event, sid)
+- iceconnectionstatechange.jingle (sid, session)
+- mediaready.jingle (stream)
+- mediafailure.jingle

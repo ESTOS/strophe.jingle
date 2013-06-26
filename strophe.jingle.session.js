@@ -5,6 +5,7 @@ function JingleSession(me, sid, connection) {
     this.connection = connection;
     this.initiator = null;
     this.responder = null;
+    this.isInitiator = null;
     this.peerjid = null;
     this.state = null;
     this.peerconnection = null;
@@ -36,6 +37,7 @@ JingleSession.prototype.initiate = function(peerjid, isInitiator) {
                   'in state ' + this.state);
         return;
     }
+    this.isInitiator = isInitiator;
     this.state = 'pending';
     this.initiator = isInitiator ? this.me : peerjid;
     this.responder = !isInitiator ? this.me : peerjid;
@@ -59,11 +61,11 @@ JingleSession.prototype.initiate = function(peerjid, isInitiator) {
     };
     this.peerconnection.onaddstream = function(event) {
         obj.remoteStream = event.stream;
-        $(document).trigger('remotestreamadded', [event, obj.sid]);
+        $(document).trigger('remotestreamadded.jingle', [event, obj.sid]);
     };
     this.peerconnection.onremovestream = function(event) {
         obj.remoteStream = null;
-        $(document).trigger('remotestreamremoved', [event, obj.sid]);
+        $(document).trigger('remotestreamremoved.jingle', [event, obj.sid]);
     };
     this.peerconnection.onsignalingstatechange = function(event) {
         if (!(obj && obj.peerconnection)) return;
@@ -80,7 +82,7 @@ JingleSession.prototype.initiate = function(peerjid, isInitiator) {
             this.stopTime = new Date();
             break;
         }
-        $(document).trigger('iceconnectionstatechange', [obj.sid, obj]);
+        $(document).trigger('iceconnectionstatechange.jingle', [obj.sid, obj]);
     };
     if (this.localStream != null) {
         this.peerconnection.addStream(localStream);
@@ -223,7 +225,7 @@ JingleSession.prototype.sendIceCandidate = function(candidate) {
         console.log('Have we encountered any relay candidates? ' + this.hadturncandidate);
 
         if (!this.hadstuncandidate) {
-            $(document).trigger('nostuncandidates');
+            $(document).trigger('nostuncandidates.jingle');
         }
     }
 };
@@ -308,7 +310,7 @@ JingleSession.prototype.setRemoteDescription = function(elem, desctype) {
     }
     */
     if (this.noearlycandidates && desctype == 'answer') {
-        console.log('delayed setLocalDescription is here...');
+        console.warn('delayed setLocalDescription is here...');
         this.peerconnection.setLocalDescription(new RTCSessionDescription({type: 'offer', sdp: this.localSDP.raw}));
     }
     if (this.peerconnection.remoteDescription != null) {
@@ -325,12 +327,12 @@ JingleSession.prototype.setRemoteDescription = function(elem, desctype) {
         }
     }
     var remotedesc = new RTCSessionDescription({type: desctype, sdp: this.remoteSDP.raw});
-    try {
-        console.log(remotedesc);
-        this.peerconnection.setRemoteDescription(remotedesc);
-    } catch (e) {
-        console.error('setRemoteDescription failed', e);
-    }
+    
+    this.peerconnection.setRemoteDescription(remotedesc, function(e){
+        console.log('setRemoteDescription success');
+    }, function(e){
+        console.error('setRemoteDescription error', e);
+    });
 };
 
 JingleSession.prototype.addIceCandidate = function(elem) {
@@ -498,7 +500,7 @@ JingleSession.prototype.createdAnswer = function(sdp, provisional) {
     }
 };
 
-JingleSession.prototype.sendTerminate = function(reason) {
+JingleSession.prototype.sendTerminate = function(reason, text) {
     var obj = this,
         term = $iq({to: this.peerjid,
                type: 'set'})
@@ -508,6 +510,10 @@ JingleSession.prototype.sendTerminate = function(reason) {
            sid: this.sid})
         .c('reason')
         .c(reason || 'success');
+        
+    if(text)
+        term.up().c('text').t(text);
+    
     this.connection.sendIQ(term,
                    function() {
                    console.log('terminate ack');

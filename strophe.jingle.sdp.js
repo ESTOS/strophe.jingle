@@ -218,7 +218,7 @@ SDP.prototype.fromJingle = function(stanza) {
     }
     this.session = this.raw;
     stanza.each(function() {
-        var m = obj.jingle2media($(this));
+        var m = obj.jingle2media($(this)); 
         obj.media.push(m);
         obj.raw += m;
     });
