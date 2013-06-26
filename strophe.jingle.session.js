@@ -5,6 +5,7 @@ function JingleSession(me, sid, connection) {
     this.connection = connection;
     this.initiator = null;
     this.responder = null;
+    this.isInitiator = null;
     this.peerjid = null;
     this.state = null;
     this.peerconnection = null;
@@ -36,6 +37,7 @@ JingleSession.prototype.initiate = function(peerjid, isInitiator) {
                   'in state ' + this.state);
         return;
     }
+    this.isInitiator = isInitiator;
     this.state = 'pending';
     this.initiator = isInitiator ? this.me : peerjid;
     this.responder = !isInitiator ? this.me : peerjid;
@@ -308,7 +310,7 @@ JingleSession.prototype.setRemoteDescription = function(elem, desctype) {
     }
     */
     if (this.noearlycandidates && desctype == 'answer') {
-        console.log('delayed setLocalDescription is here...');
+        console.warn('delayed setLocalDescription is here...');
         this.peerconnection.setLocalDescription(new RTCSessionDescription({type: 'offer', sdp: this.localSDP.raw}));
     }
     if (this.peerconnection.remoteDescription != null) {
@@ -325,12 +327,12 @@ JingleSession.prototype.setRemoteDescription = function(elem, desctype) {
         }
     }
     var remotedesc = new RTCSessionDescription({type: desctype, sdp: this.remoteSDP.raw});
-    try {
-        console.log(remotedesc);
-        this.peerconnection.setRemoteDescription(remotedesc);
-    } catch (e) {
-        console.error('setRemoteDescription failed', e);
-    }
+    
+    this.peerconnection.setRemoteDescription(remotedesc, function(e){
+        console.log('setRemoteDescription success');
+    }, function(e){
+        console.error('setRemoteDescription error', e);
+    });
 };
 
 JingleSession.prototype.addIceCandidate = function(elem) {

@@ -100,7 +100,7 @@ Strophe.addConnectionPlugin('jingle', {
             sess.terminate();
             this.terminate(sess.sid);
             if ($(iq).find('>jingle>reason>').length) {
-                $(document).trigger('callterminated', [sess.sid], $(iq).find('>jingle>reason>')[0]);
+                $(document).trigger('callterminated', [sess.sid, $(iq).find('>jingle>reason>')[0].tagName]);
             } else {
                 $(document).trigger('callterminated', [sess.sid]);
             }
@@ -109,14 +109,8 @@ Strophe.addConnectionPlugin('jingle', {
             sess.addIceCandidate($(iq).find('>jingle>content'));
             break;
         case 'session-info':
-            if ($(iq).find('>jingle>ringing[xmlns="urn:xmpp:jingle:apps:rtp:info:1"]').length) {
-                $(document).trigger('strophe:jingle:ringing', [sess.sid]);
-            } else if ($(iq).find('>jingle>mute[xmlns="urn:xmpp:jingle:apps:rtp:info:1"]').length) {
-                var affected = $(iq).find('>jingle>mute[xmlns="urn:xmpp:jingle:apps:rtp:info:1"]').attr('name');
-                $(document).trigger('strophe:jingle:mute', [sess.sid, affected]);
-            } else if ($(iq).find('>jingle>unmute[xmlns="urn:xmpp:jingle:apps:rtp:info:1"]').length) {
-                var affected = $(iq).find('>jingle>unmute[xmlns="urn:xmpp:jingle:apps:rtp:info:1"]').attr('name');
-                $(document).trigger('strophe:jingle:unmute', [sess.sid, affected]);
+            if ($(iq).find('>jingle>ringing[xmlns="urn:xmpp:jingle:apps:rtp:info:1"]')) {
+                $(document).trigger('callringing', [sess.sid]);
             }
             break;
         default:
