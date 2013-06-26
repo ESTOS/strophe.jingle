@@ -61,11 +61,11 @@ JingleSession.prototype.initiate = function(peerjid, isInitiator) {
     };
     this.peerconnection.onaddstream = function(event) {
         obj.remoteStream = event.stream;
-        $(document).trigger('remotestreamadded', [event, obj.sid]);
+        $(document).trigger('remotestreamadded.jingle', [event, obj.sid]);
     };
     this.peerconnection.onremovestream = function(event) {
         obj.remoteStream = null;
-        $(document).trigger('remotestreamremoved', [event, obj.sid]);
+        $(document).trigger('remotestreamremoved.jingle', [event, obj.sid]);
     };
     this.peerconnection.onsignalingstatechange = function(event) {
         if (!(obj && obj.peerconnection)) return;
@@ -82,7 +82,7 @@ JingleSession.prototype.initiate = function(peerjid, isInitiator) {
             this.stopTime = new Date();
             break;
         }
-        $(document).trigger('iceconnectionstatechange', [obj.sid, obj]);
+        $(document).trigger('iceconnectionstatechange.jingle', [obj.sid, obj]);
     };
     if (this.localStream != null) {
         this.peerconnection.addStream(localStream);
@@ -225,7 +225,7 @@ JingleSession.prototype.sendIceCandidate = function(candidate) {
         console.log('Have we encountered any relay candidates? ' + this.hadturncandidate);
 
         if (!this.hadstuncandidate) {
-            $(document).trigger('nostuncandidates');
+            $(document).trigger('nostuncandidates.jingle');
         }
     }
 };

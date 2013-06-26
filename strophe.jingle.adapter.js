@@ -122,14 +122,14 @@ function getUserMediaWithConstraints(um, resolution, bandwidth, fps) {
         RTC.getUserMedia(constraints,
                 function(stream) {
                     console.log('onUserMediaSuccess');
-                    $(document).trigger('mediaready', [stream]);
+                    $(document).trigger('mediaready.jingle', [stream]);
                 },
                 function(error) {
                     console.warn('Failed to get access to local media. Error ', error);
-                    $(document).trigger('mediafailure');
+                    $(document).trigger('mediafailure.jingle');
                 });
     } catch (e) {
         console.error('GUM failed: ', e);
-        $(document).trigger('mediafailure');
+        $(document).trigger('mediafailure.jingle');
     }
 }

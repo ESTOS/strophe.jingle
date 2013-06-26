@@ -71,7 +71,7 @@ Strophe.addConnectionPlugin('jingle', {
                 this.sessions[sess.sid] = sess;
                 this.jid2session[sess.peerjid] = sess;
 
-                $(document).trigger('callincoming', [sess.sid]);
+                $(document).trigger('callincoming.jingle', [sess.sid]);
 
                 // FIXME: this should be a callback based on the jid
                 if (this.AUTOACCEPT) {
@@ -100,13 +100,13 @@ Strophe.addConnectionPlugin('jingle', {
             sess.terminate();
             this.terminate(sess.sid);
             if ($(iq).find('>jingle>reason>').length) {
-                $(document).trigger('callterminated', [
+                $(document).trigger('callterminated.jingle', [
                     sess.sid, 
                     $(iq).find('>jingle>reason>')[0].tagName,
                     $(iq).find('>jingle>reason>text').text()
                 ]);
             } else {
-                $(document).trigger('callterminated', [sess.sid]);
+                $(document).trigger('callterminated.jingle', [sess.sid]);
             }
             break;
         case 'transport-info':
@@ -114,7 +114,7 @@ Strophe.addConnectionPlugin('jingle', {
             break;
         case 'session-info':
             if ($(iq).find('>jingle>ringing[xmlns="urn:xmpp:jingle:apps:rtp:info:1"]')) {
-                $(document).trigger('callringing', [sess.sid]);
+                $(document).trigger('callringing.jingle', [sess.sid]);
             }
             break;
         default:
@@ -166,7 +166,7 @@ Strophe.addConnectionPlugin('jingle', {
                 console.log('peer went away silently', jid);
                 delete this.sessions[sess.sid];
                 delete this.jid2session[jid];
-                $(document).trigger('callterminated', [sess.sid, 'gone']);
+                $(document).trigger('callterminated.jingle', [sess.sid, 'gone']);
             }
         }
     },
