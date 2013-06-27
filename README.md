@@ -15,10 +15,12 @@ Features:
 Events:
 - callincoming.jingle (sid)
 - callterminated.jingle (sid)
-- callringing.jingle (sid)
-- nostuncandidates.jingle
+- nostuncandidates.jingle (sid)
 - remotestreamadded.jingle (event, sid)
 - remotestreamremoved.jingle (event, sid)
 - iceconnectionstatechange.jingle (sid, session)
 - mediaready.jingle (stream)
 - mediafailure.jingle
+- ringing.jingle (sid)
+- mute.jingle (sid, content)
+- unmute.jingle (sid, content)
