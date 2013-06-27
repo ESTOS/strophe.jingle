@@ -85,7 +85,7 @@ JingleSession.prototype.initiate = function(peerjid, isInitiator) {
         $(document).trigger('iceconnectionstatechange.jingle', [obj.sid, obj]);
     };
     if (this.localStream != null) {
-        this.peerconnection.addStream(localStream);
+        this.peerconnection.addStream(this.localStream);
     } else {
         console.warn('attempting to initate a jingle session without a local stream');
     }
