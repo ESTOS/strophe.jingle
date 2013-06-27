@@ -71,7 +71,7 @@ Strophe.addConnectionPlugin('jingle', {
                 this.sessions[sess.sid] = sess;
                 this.jid2session[sess.peerjid] = sess;
 
-                $(document).trigger('callincoming', [sess.sid]);
+                $(document).trigger('callincoming.jingle', [sess.sid]);
 
                 // FIXME: this should be a callback based on the jid
                 if (this.AUTOACCEPT) {
@@ -100,9 +100,13 @@ Strophe.addConnectionPlugin('jingle', {
             sess.terminate();
             this.terminate(sess.sid);
             if ($(iq).find('>jingle>reason>').length) {
-                $(document).trigger('callterminated', [sess.sid, $(iq).find('>jingle>reason>')[0]]);
+                $(document).trigger('callterminated.jingle', [
+                    sess.sid, 
+                    $(iq).find('>jingle>reason>')[0].tagName,
+                    $(iq).find('>jingle>reason>text').text()
+                ]);
             } else {
-                $(document).trigger('callterminated', [sess.sid]);
+                $(document).trigger('callterminated.jingle', [sess.sid]);
             }
             break;
         case 'transport-info':
@@ -110,13 +114,13 @@ Strophe.addConnectionPlugin('jingle', {
             break;
         case 'session-info':
             if ($(iq).find('>jingle>ringing[xmlns="urn:xmpp:jingle:apps:rtp:info:1"]').length) {
-                $(document).trigger('strophe:jingle:ringing', [sess.sid]);
+                $(document).trigger('ringing.jingle', [sess.sid]);
             } else if ($(iq).find('>jingle>mute[xmlns="urn:xmpp:jingle:apps:rtp:info:1"]').length) {
                 var affected = $(iq).find('>jingle>mute[xmlns="urn:xmpp:jingle:apps:rtp:info:1"]').attr('name');
-                $(document).trigger('strophe:jingle:mute', [sess.sid, affected]);
+                $(document).trigger('mute.jingle', [sess.sid, affected]);
             } else if ($(iq).find('>jingle>unmute[xmlns="urn:xmpp:jingle:apps:rtp:info:1"]').length) {
                 var affected = $(iq).find('>jingle>unmute[xmlns="urn:xmpp:jingle:apps:rtp:info:1"]').attr('name');
-                $(document).trigger('strophe:jingle:unmute', [sess.sid, affected]);
+                $(document).trigger('unmute.jingle', [sess.sid, affected]);
             }
             break;
         default:
@@ -141,19 +145,19 @@ Strophe.addConnectionPlugin('jingle', {
         sess.sendOffer(callback);
         return sess;
     },
-    terminate: function(sid, reason) { // terminate by sessionid (or all sessions)
+    terminate: function(sid, reason, text) { // terminate by sessionid (or all sessions)
         if (sid == null) {
             for (sid in this.sessions) {
-                if (this.sessions[sid].active()) {
-                    this.sessions[sid].sendTerminate(reason);
+                if(this.sessions[sid].state != 'ended'){
+                    this.sessions[sid].sendTerminate(reason||(!this.sessions[sid].active())?'cancel':null, text);
                     this.sessions[sid].terminate();
                 }
                 delete this.jid2session[this.sessions[sid].peerjid];
                 delete this.sessions[sid];
             }
         } else if (this.sessions.hasOwnProperty(sid)) {
-            if (this.sessions[sid].active()) {
-                this.sessions[sid].sendTerminate(reason);
+            if(this.sessions[sid].state != 'ended'){
+                this.sessions[sid].sendTerminate(reason||(!this.sessions[sid].active())?'cancel':null, text);
                 this.sessions[sid].terminate();
             }
             delete this.jid2session[this.sessions[sid].peerjid];
@@ -168,7 +172,7 @@ Strophe.addConnectionPlugin('jingle', {
                 console.log('peer went away silently', jid);
                 delete this.sessions[sess.sid];
                 delete this.jid2session[jid];
-                $(document).trigger('callterminated', [sess.sid, 'gone']);
+                $(document).trigger('callterminated.jingle', [sess.sid, 'gone']);
             }
         }
     },
