@@ -15,7 +15,7 @@ Features:
 Events:
 - callincoming.jingle (sid)
 - callterminated.jingle (sid)
-- nostuncandidates.jingle
+- nostuncandidates.jingle (sid)
 - remotestreamadded.jingle (event, sid)
 - remotestreamremoved.jingle (event, sid)
 - iceconnectionstatechange.jingle (sid, session)

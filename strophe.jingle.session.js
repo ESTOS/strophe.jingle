@@ -225,7 +225,7 @@ JingleSession.prototype.sendIceCandidate = function(candidate) {
         console.log('Have we encountered any relay candidates? ' + this.hadturncandidate);
 
         if (!this.hadstuncandidate && this.peerconnection.signalingState != 'closed') {
-            $(document).trigger('nostuncandidates.jingle');
+            $(document).trigger('nostuncandidates.jingle', [this.sid]);
         }
     }
 };
