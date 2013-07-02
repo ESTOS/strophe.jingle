@@ -99,10 +99,10 @@ Strophe.addConnectionPlugin('jingle', {
             console.log('terminating...');
             sess.terminate();
             this.terminate(sess.sid);
-            if ($(iq).find('>jingle>reason>').length) {
+            if ($(iq).find('>jingle>reason').length) {
                 $(document).trigger('callterminated.jingle', [
                     sess.sid, 
-                    $(iq).find('>jingle>reason>')[0].tagName,
+                    $(iq).find('>jingle>reason')[0].tagName,
                     $(iq).find('>jingle>reason>text').text()
                 ]);
             } else {
