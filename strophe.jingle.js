@@ -211,6 +211,12 @@ Strophe.addConnectionPlugin('jingle', {
                             dict.url += el.attr('username') + '@';
                         }
                         dict.url += el.attr('host');
+                        if (el.attr('port') && el.attr('port') != '3478') {
+                            dict.url += ':' + el.attr('port');
+                        }
+                        if (el.attr('transport') && el.attr('transport') != 'udp') {
+                            dict.url += '?transport=' + el.attr('transport');
+                        }
                         if (el.attr('password')) {
                             dict.credential = el.attr('password');
                         }
