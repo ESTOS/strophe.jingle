@@ -207,7 +207,7 @@ function waitForRemoteVideo(selector, sid) {
     sess = connection.jingle.sessions[sid];
     videoTracks = sess.remoteStream.getVideoTracks();
     if (videoTracks.length === 0 || selector[0].currentTime > 0) {
-        $(document).trigger('callactive', [selector, sid]);
+        $(document).trigger('callactive.jingle', [selector, sid]);
         RTC.attachMediaStream(selector, sess.remoteStream); // FIXME: why do i have to do this for FF?
         console.log('waitForremotevideo', sess.peerconnection.iceConnectionState, sess.peerconnection.signalingState);
     } else {
@@ -227,7 +227,7 @@ function onIceConnectionStateChanged(event, sid, sess) {
     /*
     if (sess.peerconnection.signalingState == 'stable' && sess.peerconnection.iceConnectionState == 'connected') {
         var el = $("<video autoplay='autoplay' style='display:none'/>").attr('id', 'largevideo_' + sid);
-        $(document).trigger('callactive', [el, sid]);
+        $(document).trigger('callactive.jingle', [el, sid]);
         RTC.attachMediaStream(el, sess.remoteStream); // moving this before the trigger doesn't work in FF?!
     }
     */
@@ -330,16 +330,16 @@ $(document).ready(function() {
     connection.jingle.pc_constraints = RTC.pc_constraints;
 
     $(document).bind('connected', onConnected);
-    $(document).bind('mediaready', onMediaReady);
-    $(document).bind('mediafailure', onMediaFailure);
-    $(document).bind('callincoming', onCallIncoming);
-    $(document).bind('callactive', onCallActive);
-    $(document).bind('callterminated', onCallTerminated);
+    $(document).bind('mediaready.jingle', onMediaReady);
+    $(document).bind('mediafailure.jingle', onMediaFailure);
+    $(document).bind('callincoming.jingle', onCallIncoming);
+    $(document).bind('callactive.jingle', onCallActive);
+    $(document).bind('callterminated.jingle', onCallTerminated);
 
-    $(document).bind('remotestreamadded', onRemoteStreamAdded);
-    $(document).bind('remotestreamremoved', onRemoteStreamRemoved);
-    $(document).bind('iceconnectionstatechange', onIceConnectionStateChanged);
-    $(document).bind('nostuncandidates', noStunCandidates);
+    $(document).bind('remotestreamadded.jingle', onRemoteStreamAdded);
+    $(document).bind('remotestreamremoved.jingle', onRemoteStreamRemoved);
+    $(document).bind('iceconnectionstatechange.jingle', onIceConnectionStateChanged);
+    $(document).bind('nostuncandidates.jingle', noStunCandidates);
     if (RTC != null) {
         RTCPeerconnection = RTC.peerconnection;
         if (RTC.browser == 'firefox') {

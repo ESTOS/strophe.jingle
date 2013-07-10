@@ -18,7 +18,7 @@ $(document).ready(function() {
             button.value = 'disconnect';
 
             setStatus('please allow access to microphone and camera');
-            getUserMediaWithConstraints();
+            getUserMediaWithConstraints(['audio', 'video']);
 
             $('#credentials>input[id!="connect"]').attr('disabled', 'disabled');
         } else {
