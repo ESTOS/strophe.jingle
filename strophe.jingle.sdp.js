@@ -214,7 +214,7 @@ SDP.prototype.fromJingle = function(stanza) {
     // assume all contents are in the same bundle group, can be improved upon later
     if ($(stanza).find('>transport').filter(function(idx, transport) { return $(transport).attr('ufrag') == $(stanza).find('>transport').attr('ufrag'); }).length == $(stanza).find('>transport').length
             && $(stanza).find('>transport').filter(function(idx, transport) { return $(transport).attr('ufrag') == $(stanza).find('>transport').attr('ufrag'); }).length == $(stanza).find('>transport').length) {
-        this.raw += 'a=group:BUNDLE ' + $.map(stanza, function(content) { return $(content).attr('name'); }).join(' ') + '\r\n';
+        //this.raw += 'a=group:BUNDLE ' + $.map(stanza, function(content) { return $(content).attr('name'); }).join(' ') + '\r\n';
     }
     this.session = this.raw;
     stanza.each(function() {

@@ -148,7 +148,7 @@ JingleSession.prototype.active = function() {
 };
 
 JingleSession.prototype.sendIceCandidate = function(candidate) {
-    var ob = this;
+    var ob = this; 
     if (candidate && !this.lasticecandidate) {
         var ice = SDPUtil.iceparams(this.localSDP.media[candidate.sdpMLineIndex], this.localSDP.session),
             jcand = SDPUtil.candidateToJingle(candidate.candidate);
