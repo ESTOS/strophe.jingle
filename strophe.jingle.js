@@ -102,7 +102,7 @@ Strophe.addConnectionPlugin('jingle', {
             if ($(iq).find('>jingle>reason').length) {
                 $(document).trigger('callterminated.jingle', [
                     sess.sid, 
-                    $(iq).find('>jingle>reason')[0].tagName,
+                    $(iq).find('>jingle>reason :first')[0].tagName,
                     $(iq).find('>jingle>reason>text').text()
                 ]);
             } else {
