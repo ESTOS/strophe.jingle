@@ -207,8 +207,11 @@ Strophe.addConnectionPlugin('jingle', {
                     case 'turn':
                         dict.url = 'turn:';
                         if (el.attr('username')) { // https://code.google.com/p/webrtc/issues/detail?id=1508
-                            // dict.username = el.attr('username'); // only works in M28
-                            dict.url += el.attr('username') + '@';
+                            if (navigator.userAgent.match(/Chrom(e|ium)\/([0-9]+)\./) && parseInt(navigator.userAgent.match(/Chrom(e|ium)\/([0-9]+)\./)[2]) < 28) {
+                                dict.url += el.attr('username') + '@';
+                            } else {
+                                dict.username = el.attr('username'); // only works in M28
+                            }
                         }
                         dict.url += el.attr('host');
                         if (el.attr('port') && el.attr('port') != '3478') {
