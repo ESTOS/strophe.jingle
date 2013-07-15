@@ -187,8 +187,18 @@ JingleSession.prototype.sendIceCandidate = function(candidate) {
                 cand.up();
             }
             this.connection.sendIQ(cand,
-                           function() { console.log('transport info ack'); },
-                           function() { console.error('transport info error'); },
+                           function() { 
+                               console.log('transport info ack'); 
+                               $(document).trigger('ack.transport.jingle', [ob.sid]);
+                           },
+                           function(stanza) { 
+                                console.error('transport info error'); 
+                                var error = {
+                                    code: $(stanza).find('error').attr('code'),
+                                    reason: $(stanza).find('error :first')[0].tagName
+                                };
+                                $(document).trigger('error.transport.jingle', [ob.sid, error]);
+                            },
                            10000);
         }
     } else {
@@ -206,17 +216,17 @@ JingleSession.prototype.sendIceCandidate = function(candidate) {
             this.connection.sendIQ(init,
                 function(stanza) {
                     console.log('session initiate ack');
-                    if (callback) {
-                        callback(true, stanza);
-                    }
+                    $(document).trigger('ack.session.jingle', [ob.sid]);
                 },
                 function(stanza) {
                     ob.state = 'error';
                     ob.peerconnection.close();
                     console.error('session initiate error');
-                    if (callback) {
-                        callback(false, stanza);
-                    }
+                    var error = {
+                        code: $(stanza).find('error').attr('code'),
+                        reason: $(stanza).find('error :first')[0].tagName
+                    };
+                    $(document).trigger('error.session.jingle', [ob.sid, error]);
                 },
             10000);
         }
@@ -243,7 +253,7 @@ JingleSession.prototype.sendOffer = function(callback) {
     );
 };
 
-JingleSession.prototype.createdOffer = function(sdp, callback) {
+JingleSession.prototype.createdOffer = function(sdp) {
     console.log('createdOffer', sdp);
     var ob = this;
     this.localSDP = new SDP(sdp.sdp);
@@ -259,17 +269,17 @@ JingleSession.prototype.createdOffer = function(sdp, callback) {
         this.connection.sendIQ(init,
             function(stanza) {
                 console.log('session initiate ack');
-                if (callback) {
-                    callback(true, stanza);
-                }
+                $(document).trigger('ack.session.jingle', [ob.sid]);
             },
             function(stanza) {
                 ob.state = 'error';
                 ob.peerconnection.close();
                 console.error('session initiate error');
-                if (callback) {
-                    callback(false, stanza);
-                }
+                var error = {
+                    code: $(stanza).find('error').attr('code'),
+                    reason: $(stanza).find('error :first')[0].tagName
+                };
+                $(document).trigger('error.session.jingle', [ob.sid, error]);
             },
         10000);
     }
