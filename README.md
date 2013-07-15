@@ -24,3 +24,4 @@ Events:
 - ringing.jingle (sid)
 - mute.jingle (sid, content)
 - unmute.jingle (sid, content)
+- error.jingle (sid, error)
