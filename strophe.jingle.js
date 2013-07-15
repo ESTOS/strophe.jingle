@@ -98,7 +98,7 @@ Strophe.addConnectionPlugin('jingle', {
         case 'session-terminate':
             console.log('terminating...');
             sess.terminate();
-            this.terminate(sess.sid);
+            this.terminate(sess.sid); 
             if ($(iq).find('>jingle>reason').length) {
                 $(document).trigger('callterminated.jingle', [
                     sess.sid, 
@@ -129,7 +129,7 @@ Strophe.addConnectionPlugin('jingle', {
         }
         return true;
     },
-    initiate: function(peerjid, myjid, callback) { // initiate a new jinglesession to peerjid
+    initiate: function(peerjid, myjid) { // initiate a new jinglesession to peerjid
         var sess = new JingleSession(myjid,
                                      Math.random().toString(36).substr(2, 12), // random string
                                      this.connection);
@@ -142,7 +142,7 @@ Strophe.addConnectionPlugin('jingle', {
         sess.initiate(peerjid, true);
         this.sessions[sess.sid] = sess;
         this.jid2session[sess.peerjid] = sess;
-        sess.sendOffer(callback);
+        sess.sendOffer();
         return sess;
     },
     terminate: function(sid, reason, text) { // terminate by sessionid (or all sessions)

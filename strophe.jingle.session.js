@@ -189,15 +189,15 @@ JingleSession.prototype.sendIceCandidate = function(candidate) {
             this.connection.sendIQ(cand,
                            function() { 
                                console.log('transport info ack'); 
-                               $(document).trigger('ack.transport.jingle', [ob.sid]);
                            },
                            function(stanza) { 
                                 console.error('transport info error'); 
-                                var error = {
+                                var error = ($(stanza).find('error').length) ? {
                                     code: $(stanza).find('error').attr('code'),
-                                    reason: $(stanza).find('error :first')[0].tagName
-                                };
-                                $(document).trigger('error.transport.jingle', [ob.sid, error]);
+                                    reason: $(stanza).find('error :first')[0].tagName,
+                                }:{};
+                                error.source = 'offer';
+                                $(document).trigger('error.jingle', [ob.sid, error]);
                             },
                            10000);
         }
@@ -214,19 +214,19 @@ JingleSession.prototype.sendIceCandidate = function(candidate) {
             this.localSDP = new SDP(this.peerconnection.localDescription.sdp);
             this.localSDP.toJingle(init, this.initiator == this.me ? 'initiator' : 'responder');
             this.connection.sendIQ(init,
-                function(stanza) {
+                function() {
                     console.log('session initiate ack');
-                    $(document).trigger('ack.session.jingle', [ob.sid]);
                 },
                 function(stanza) {
                     ob.state = 'error';
                     ob.peerconnection.close();
                     console.error('session initiate error');
-                    var error = {
+                    var error = ($(stanza).find('error').length) ? {
                         code: $(stanza).find('error').attr('code'),
-                        reason: $(stanza).find('error :first')[0].tagName
-                    };
-                    $(document).trigger('error.session.jingle', [ob.sid, error]);
+                        reason: $(stanza).find('error :first')[0].tagName,
+                    }:{};
+                    error.source = 'offer';
+                    $(document).trigger('error.jingle', [ob.sid, error]);
                 },
             10000);
         }
@@ -240,11 +240,11 @@ JingleSession.prototype.sendIceCandidate = function(candidate) {
     }
 };
 
-JingleSession.prototype.sendOffer = function(callback) {
+JingleSession.prototype.sendOffer = function() {
     console.log('sendOffer...');
     var ob = this;
     this.peerconnection.createOffer(function(sdp) {
-            ob.createdOffer(sdp, callback);
+            ob.createdOffer(sdp);
         },
         function(e) {
             console.error('createOffer failed', e);
@@ -267,19 +267,19 @@ JingleSession.prototype.createdOffer = function(sdp) {
                sid: this.sid});
         this.localSDP.toJingle(init, this.initiator == this.me ? 'initiator' : 'responder');
         this.connection.sendIQ(init,
-            function(stanza) {
-                console.log('session initiate ack');
-                $(document).trigger('ack.session.jingle', [ob.sid]);
+            function() {
+                console.log('offer initiate ack');
             },
             function(stanza) {
                 ob.state = 'error';
                 ob.peerconnection.close();
-                console.error('session initiate error');
-                var error = {
+                console.error('offer initiate error');
+                var error = ($(stanza).find('error').length) ? {
                     code: $(stanza).find('error').attr('code'),
-                    reason: $(stanza).find('error :first')[0].tagName
-                };
-                $(document).trigger('error.session.jingle', [ob.sid, error]);
+                    reason: $(stanza).find('error :first')[0].tagName,
+                }:{};
+                error.source = 'offer';
+                $(document).trigger('error.jingle', [ob.sid, error]);
             },
         10000);
     }
