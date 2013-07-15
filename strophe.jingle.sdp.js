@@ -45,6 +45,11 @@ SDP.prototype.mangle = function() {
 // add content's to a jingle element
 SDP.prototype.toJingle = function(elem, thecreator) {
     var i, j, k, mline, ssrc, rtpmap, tmp, lines;
+    var bundle = [];
+    if (SDPUtil.find_line(this.session, 'a=group:BUNDLE ')) {
+        bundle = SDPUtil.find_line(this.session, 'a=group:BUNDLE ').split(' ');
+        bundle.shift();
+    }
     for (i = 0; i < this.media.length; i++) {
         mline = SDPUtil.parse_mline(this.media[i].split('\r\n')[0]);
         if (!(mline.media == 'audio' || mline.media == 'video')) {
@@ -59,7 +64,14 @@ SDP.prototype.toJingle = function(elem, thecreator) {
         elem.c('content', {creator: thecreator, name: mline.media});
         if (SDPUtil.find_line(this.media[i], 'a=mid:')) {
             // prefer identifier from a=mid if present
-            elem.attrs({ name: SDPUtil.parse_mid(SDPUtil.find_line(this.media[i], 'a=mid:')) });
+            var mid = SDPUtil.parse_mid(SDPUtil.find_line(this.media[i], 'a=mid:'));
+            elem.attrs({ name: mid });
+
+            // preliminary bundle mapping
+            if (bundle.indexOf(mid) != -1) {
+                elem.c('bundle', {xmlns:'http://estos.de/ns/bundle'}).up();
+                bundle.splice(bundle.indexOf(mid), 1);
+            }
         }
         if (SDPUtil.find_line(this.media[i], 'a=rtpmap:').length) {
             elem.c('description',
@@ -212,10 +224,17 @@ SDP.prototype.fromJingle = function(stanza) {
         't=0 0\r\n';
     // http://tools.ietf.org/html/draft-ietf-mmusic-sdp-bundle-negotiation-04#section-8
     // assume all contents are in the same bundle group, can be improved upon later
-    if ($(stanza).find('>transport').filter(function(idx, transport) { return $(transport).attr('ufrag') == $(stanza).find('>transport').attr('ufrag'); }).length == $(stanza).find('>transport').length
-            && $(stanza).find('>transport').filter(function(idx, transport) { return $(transport).attr('ufrag') == $(stanza).find('>transport').attr('ufrag'); }).length == $(stanza).find('>transport').length) {
-        //this.raw += 'a=group:BUNDLE ' + $.map(stanza, function(content) { return $(content).attr('name'); }).join(' ') + '\r\n';
+    // TODO: replace by proper mapping
+    var bundle = $(stanza).filter(function(idx, content) { 
+        //elem.c('bundle', {xmlns:'http://estos.de/ns/bundle'});
+        return $(content).find('>bundle').length > 0;
+    }).map(function(idx, content) { 
+        return $(content).attr('name'); 
+    }).get();
+    if (bundle.length) {
+        this.raw += 'a=group:BUNDLE ' + bundle.join(' ') + '\r\n';
     }
+
     this.session = this.raw;
     stanza.each(function() {
         var m = obj.jingle2media($(this)); 
