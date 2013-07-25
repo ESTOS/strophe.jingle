@@ -6,11 +6,11 @@ strophe.jingle is a webrtc connection plugin for [strophe.js](http://strophe.im/
 This plugin makes it possible to negotiate audio/video streams via XMPP and then relinquish control to the WebRTC support of browsers like Firefox and Chrome for the actual out-of-band media streams. XMPP/Jingle you get the authenticated, secured and federated media signaling, whereas WebRTC gives you an API to set up the media streams using RTP/ICE/STUN and provide access to cameras and microphones.
 
 Features:
-- mostly standards-compliant jingle, mapping from WebRTCs SDP to Jingle and vice versa. Aiming for full compliance.
+- mostly standards-compliant jingle, mapping from WebRTCs SDP to Jingle and vice versa. Aiming for full compliance with XEPs 0166, 0167, 0293, 0294 and 0320.
 - tested with chrome and firefox.
 - trickle and non-trickle modes for ICE (XEP-0176). Even supports early candidates from peer using PRANSWER.
 - support for fetching time-limited STUN/TURN credentials through XEP-0215. [rfc5766-turn-server](https://code.google.com/p/rfc5766-turn-server/) is a TURN server which implements this method.
-- a sample demonstrating the use of this to build a federated multi-user conference (in full-mesh mode). 
+- a sample demonstrating the use of this to build a federated multi-user conference (in full-mesh mode). When [hark](https://github.com/latentflip/hark) is available, the local audio volume is visualized (in Chrome M29+).
 
 Events:
 - callincoming.jingle (sid)
