@@ -9,6 +9,7 @@
     <script src='strophe.jingle.sdp.js' charset='utf-8'></script><!-- sdp library -->
     <script src='strophe.jingle.adapter.js' charset='utf-8'></script><!-- getusermedia cross browser compat layer -->
     <script src='muc.js' charset='utf-8'></script><!-- sample application logic -->
+    <script src='hark.bundle.js' charset='utf-8'></script><!-- https://github.com/latentflip/hark --> 
     <script type='text/javascript' charset='utf-8'>
 $(document).ready(function() {
 //    $('#connect').bind('click', function () {
@@ -58,7 +59,9 @@ function doConnect() {
     <style type='text/css'>
 body {background-color:#9ce9fe}
 #largevideocontainer {width:90%;top:10px;bottom:30px;left:10px;position:absolute;}
-#minivideo {width:160px;height:120px;position:absolute;right:10px;top:10px;}
+#minivideocontainer {width:160px;height:120px;position:absolute;right:10px;top:10px;}
+#minivideo {width:160px;height:120px;position:absolute;}
+#ownvolume {width:0px;height:5px;position:absolute;bottom:0px;background-color:#6ddffe;}
 #status {position:absolute;bottom:0px;height:30px;left:10px;right:10px;color:white;background-color:#6ddffe;font-weight:bold;line-height:28px;font-size:14px;text-align:center;}
 #explain {width:160px;position:absolute;bottom:30px;right:10px;color:white;background-color:#6ddffe;font-weight:bold;font-size:14px;text-align:center}
 #explain a:link {color:white;}
@@ -74,7 +77,10 @@ body {background-color:#9ce9fe}
     </div>
 	<div id='largevideocontainer'>
     </div>
-    <video id='minivideo' autoplay='autoplay'></video>
+    <div id='minivideocontainer'>
+      <video id='minivideo' autoplay='autoplay'></video>
+      <div id='ownvolume'></div>
+    </div>
     <div id='login'>
       <form id='credentials'>
         <label for='jid'>JID:</label>
