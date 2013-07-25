@@ -165,6 +165,31 @@ function onMediaReady(event, stream) {
     RTC.attachMediaStream($('#minivideo'), localStream);
 
     doConnect();
+
+    if (typeof hark === "function") {
+        var options = { interval:400 };
+        var speechEvents = hark(stream, options);
+
+        speechEvents.on('speaking', function() {
+          console.log('speaking');
+        });
+
+        speechEvents.on('stopped_speaking', function() {
+          console.log('stopped_speaking');
+        });
+        speechEvents.on('volume_change', function(volume, treshold) {
+          //console.log('volume', volume, treshold);
+          if (volume < -60) { // vary between -60 and -35
+              $('#ownvolume').css('width', 0);
+          } else if (volume > -35) {
+              $('#ownvolume').css('width', '100%');
+          } else {
+              $('#ownvolume').css('width', (volume+100)*100/25-160+ '%');
+          }
+        });
+    } else {
+        console.warn('without hark, you are missing quite a nice feature');
+    }
 }
 
 function onMediaFailure() {
@@ -201,6 +226,14 @@ function onRemoteStreamAdded(event, data, sid) {
     var el = $("<video autoplay='autoplay' style='display:none'/>").attr('id', 'largevideo_' + sid);
     RTC.attachMediaStream(el, data.stream);
     waitForRemoteVideo(el, sid);
+    /* does not yet work for remote streams -- https://code.google.com/p/webrtc/issues/detail?id=861
+    var options = { interval:500 };
+    var speechEvents = hark(data.stream, options);
+
+    speechEvents.on('volume_change', function(volume, treshold) {
+      console.log('volume for ' + sid, volume, treshold);
+    });
+    */
 }
 
 function waitForRemoteVideo(selector, sid) {
@@ -327,7 +360,9 @@ $(document).ready(function() {
     connection.jingle.AUTOACCEPT = AUTOACCEPT;
     connection.jingle.ice_config = ice_config;
     connection.jingle.MULTIPARTY = MULTIPARTY;
-    connection.jingle.pc_constraints = RTC.pc_constraints;
+    if (RTC) {
+        connection.jingle.pc_constraints = RTC.pc_constraints;
+    }
 
     $(document).bind('connected', onConnected);
     $(document).bind('mediaready.jingle', onMediaReady);
