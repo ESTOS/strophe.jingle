@@ -208,7 +208,7 @@ JingleSession.prototype.sendIceCandidate = function(candidate) {
             var init = $iq({to: this.peerjid,
                        type: 'set'})
                 .c('jingle', {xmlns: 'urn:xmpp:jingle:1',
-                   action: 'session-initiate',
+                   action: this.peerconnection.localDescription.type == 'offer' ? 'session-initiate' : 'session-accept',
                    initiator: this.initiator,
                    sid: this.sid});
             this.localSDP = new SDP(this.peerconnection.localDescription.sdp);
