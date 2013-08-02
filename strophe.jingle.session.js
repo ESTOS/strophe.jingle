@@ -328,6 +328,20 @@ JingleSession.prototype.setRemoteDescription = function(elem, desctype) {
         if (this.peerconnection.remoteDescription.type == 'pranswer') {
             var pranswer = new SDP(this.peerconnection.remoteDescription.sdp);
             for (var i = 0; i < pranswer.media.length; i++) {
+                // make sure we have ice ufrag and pwd
+                if (!SDPUtil.find_line(this.remoteSDP.media[i], 'a=ice-ufrag:', this.remoteSDP.session)) {
+                    if (SDPUtil.find_line(pranswer.media[i], 'a=ice-ufrag:', pranswer.session)) {
+                        this.remoteSDP.media[i] += SDPUtil.find_line(pranswer.media[i], 'a=ice-ufrag:', pranswer.session) + '\r\n';
+                    } else {
+                        console.warn('no ice ufrag?');
+                    }
+                    if (SDPUtil.find_line(pranswer.media[i], 'a=ice-pwd:', pranswer.session)) {
+                        this.remoteSDP.media[i] += SDPUtil.find_line(pranswer.media[i], 'a=ice-pwd:', pranswer.session) + '\r\n';
+                    } else {
+                        console.warn('no ice pwd?');
+                    }
+                }
+                // copy over candidates
                 var lines = SDPUtil.find_lines(pranswer.media[i], 'a=candidate:');
                 for (var j = 0; j < lines.length; j++) {
                     this.remoteSDP.media[i] += lines[j] + '\r\n';

@@ -277,8 +277,12 @@ SDP.prototype.jingle2media = function(content) {
     media += 'c=IN IP4 0.0.0.0\r\n';
     media += 'a=rtcp:1 IN IP4 0.0.0.0\r\n';
     if (content.find('transport').length) {
-        media += SDPUtil.build_iceufrag(content.find('transport').attr('ufrag')) + '\r\n';
-        media += 'a=ice-pwd:' + content.find('transport').attr('pwd') + '\r\n';
+        if (content.find('transport').attr('ufrag')) {
+            media += SDPUtil.build_iceufrag(content.find('transport').attr('ufrag')) + '\r\n';
+        }
+        if (content.find('transport').attr('pwd')) {
+            media += 'a=ice-pwd:' + content.find('transport').attr('pwd') + '\r\n';
+        }
         tmp = content.find('transport>fingerprint');
         if (tmp.length) {
             media += 'a=fingerprint:' + tmp.attr('hash');
