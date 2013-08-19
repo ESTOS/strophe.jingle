@@ -361,10 +361,10 @@ JingleSession.prototype.setRemoteDescription = function(elem, desctype) {
 
 JingleSession.prototype.addIceCandidate = function(elem) {
     var obj = this;
-    if (this.peerconnection.readyState == 'closed') {
+    if (this.peerconnection.signalingState == 'closed') {
         return;
     }
-    if (!this.peerconnection.remoteDescription) {
+    if (!this.peerconnection.remoteDescription && !this.peerconnection.signalingState == 'stable') {
         console.log('trickle ice candidate arriving before session accept...');
         // create a PRANSWER for setRemoteDescription
         if (!this.remoteSDP) {
