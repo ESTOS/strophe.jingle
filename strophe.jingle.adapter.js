@@ -3,19 +3,8 @@ function setupRTC() {
     var RTC = null;
     if (navigator.mozGetUserMedia && mozRTCPeerConnection) {
         console.log('This appears to be Firefox');
-        var ua = navigator.userAgent.split(' '),
-                isnightly = false;
-        try {
-            var ver = ua.pop(),
-                    build = ua.pop().split('/').pop();
-
-            if (parseFloat(ver.split('/')[1]) > 21.0) {
-                isnightly = true;
-            }
-        } catch (e) {
-            console.error('uhm...');
-        }
-        if (isnightly) {
+        var version = parseInt(navigator.userAgent.match(/Firefox\/([0-9]+)\./)[1]);
+        if (version >= 22) {
             RTC = {
                 peerconnection: mozRTCPeerConnection,
                 browser: 'firefox',
@@ -26,8 +15,10 @@ function setupRTC() {
                 },
                 pc_constraints: {}
             };
-            MediaStream.prototype.getVideoTracks = function() { return []; };
-            MediaStream.prototype.getAudioTracks = function() { return []; };
+            if (!MediaStream.prototype.getVideoTracks)
+                MediaStream.prototype.getVideoTracks = function() { return []; };
+            if (!MediaStream.prototype.getAudioTracks)
+                MediaStream.prototype.getAudioTracks = function() { return []; };
             RTCSessionDescription = mozRTCSessionDescription;
             RTCIceCandidate = mozRTCIceCandidate;
         }
