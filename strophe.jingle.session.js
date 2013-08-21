@@ -364,7 +364,7 @@ JingleSession.prototype.addIceCandidate = function(elem) {
     if (this.peerconnection.signalingState == 'closed') {
         return;
     }
-    if (!this.peerconnection.remoteDescription && !this.peerconnection.signalingState == 'stable') {
+    if (!this.peerconnection.remoteDescription && this.peerconnection.signalingState == 'have-local-offer') {
         console.log('trickle ice candidate arriving before session accept...');
         // create a PRANSWER for setRemoteDescription
         if (!this.remoteSDP) {
