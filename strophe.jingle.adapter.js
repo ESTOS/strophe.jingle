@@ -53,14 +53,13 @@ function setupRTC() {
 }
 
 function getUserMediaWithConstraints(um, resolution, bandwidth, fps) {
-
     var constraints = {audio: false, video: false};
 
     if ($.inArray('video', um) >= 0) {
-        constraints.video = true;
+        constraints.video = {mandatory:{}};// same behaviour as true
     }
     if ($.inArray('audio', um) >= 0) {
-        constraints.audio = true;
+        constraints.audio = {};// same behaviour as true
     }
     if ($.inArray('screen', um) >= 0) {
         constraints.video = {
@@ -70,42 +69,64 @@ function getUserMediaWithConstraints(um, resolution, bandwidth, fps) {
         }
     }
 
+    if (resolution && !constraints.video) {
+        constraints.video = {mandatory:{}};// same behaviour as true
+    }
     // see https://code.google.com/p/chromium/issues/detail?id=143631#c9 for list of supported resolutions
     switch (resolution) {
         // 16:9 first
+        case '1080':
+        case 'fullhd':
+            constraints.video.mandatory.minWidth = 1920;
+            constraints.video.mandatory.minHeight = 1080;
+            constraints.video.mandatory.minAspectRatio = 1.77;
+            break;
         case '720':
         case 'hd':
-            constraints.video = {mandatory: {minWidth: 1280, minHeight: 720, minAspectRatio: 1.77}};
+            constraints.video.mandatory.minWidth = 1280;
+            constraints.video.mandatory.minHeight = 720;
+            constraints.video.mandatory.minAspectRatio = 1.77;
             break;
         case '360':
-            constraints.video = {mandatory: {minWidth: 640, minHeight: 360, minAspectRatio: 1.77}};
+            constraints.video.mandatory.minWidth = 640;
+            constraints.video.mandatory.minHeight = 360;
+            constraints.video.mandatory.minAspectRatio = 1.77;
             break;
         case '180':
-            constraints.video = {mandatory: {minWidth: 320, minHeight: 180, minAspectRatio: 1.77}};
+            constraints.video.mandatory.minWidth = 320;
+            constraints.video.mandatory.minHeight = 180;
+            constraints.video.mandatory.minAspectRatio = 1.77;
             break;
             // 4:3
         case '960':
-            constraints.video = {mandatory: {minWidth: 960, minHeight: 720}};
+            constraints.video.mandatory.minWidth = 960;
+            constraints.video.mandatory.minHeight = 720;
             break;
         case '640':
         case 'vga':
-            constraints.video = {mandatory: {maxWidth: 640, maxHeight: 480}};
+            constraints.video.mandatory.minWidth = 640;
+            constraints.video.mandatory.minHeight = 480;
             break;
         case '320':
-            constraints.video = {mandatory: {maxWidth: 320, maxHeight: 240}};
+            constraints.video.mandatory.minWidth = 320;
+            constraints.video.mandatory.minHeight = 240;
             break;
         default:
             if (navigator.userAgent.indexOf('Android') != -1) {
-                constraints.video = {mandatory: {maxWidth: 320, maxHeight: 240, maxFrameRate: 15}};
+                constraints.video.mandatory.minWidth = 320;
+                constraints.video.mandatory.minHeight = 240;
+                constraints.video.mandatory.maxFrameRate = 15;
             }
             break;
     }
 
     if (bandwidth) { // doesn't work currently, see webrtc issue 1846
+        if (!constraints.video) constraints.video = {mandatory:{}};//same behaviour as true
         constraints.video.optional = [{bandwidth: bandwidth}];
     }
     if (fps) { // for some cameras it might be necessary to request 30fps
         // so they choose 30fps mjpg over 10fps yuy2
+        if (!constraints.video) constraints.video = {mandatory:{}};// same behaviour as tru;
         constraints.video.mandatory['minFrameRate'] = fps;
     }
  
