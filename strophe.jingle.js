@@ -10,9 +10,6 @@ Strophe.addConnectionPlugin('jingle', {
         // MozDontOfferDataChannel: true when this is firefox
     },
     localStream: null,
-    MULTIPARTY: false,
-    AUTOACCEPT: true,
-    PRANSWER: false,
 
     init: function(conn) {
         this.connection = conn;
@@ -56,40 +53,24 @@ Strophe.addConnectionPlugin('jingle', {
         // see http://xmpp.org/extensions/xep-0166.html#concepts-session
         switch (action) {
         case 'session-initiate':
-            if (this.MULTIPARTY || Object.keys(this.sessions).length == 0) {
-                sess = new JingleSession($(iq).attr('to'), $(iq).find('jingle').attr('sid'), this.connection);
-                // configure session
-                sess.localStream = this.localStream;
-                sess.media_constraints = this.media_constraints;
-                sess.pc_constraints = this.pc_constraints;
-                sess.ice_config = this.ice_config;
+            sess = new JingleSession($(iq).attr('to'), $(iq).find('jingle').attr('sid'), this.connection);
+            // configure session
+            sess.localStream = this.localStream;
+            sess.media_constraints = this.media_constraints;
+            sess.pc_constraints = this.pc_constraints;
+            sess.ice_config = this.ice_config;
 
-                sess.initiate($(iq).attr('from'), false);
-                // FIXME: setRemoteDescription should only be done when this call is to be accepted
-                sess.setRemoteDescription($(iq).find('>jingle>content'), 'offer');
+            sess.initiate($(iq).attr('from'), false);
+            // FIXME: setRemoteDescription should only be done when this call is to be accepted
+            sess.setRemoteDescription($(iq).find('>jingle>content'), 'offer');
 
-                this.sessions[sess.sid] = sess;
-                this.jid2session[sess.peerjid] = sess;
+            this.sessions[sess.sid] = sess;
+            this.jid2session[sess.peerjid] = sess;
 
-                $(document).trigger('callincoming.jingle', [sess.sid]);
-
-                // FIXME: this should be a callback based on the jid
-                if (this.AUTOACCEPT) {
-                    sess.sendAnswer();
-                    sess.accept();
-                    // FIXME: watch for unavailable from this specific jid to terminate properly and remove handler later
-                    //  currently done by app + terminateByJid
-                    // hand = this.connection.addHandler(onPresenceUnavailable, null, 'presence', 'unavailable', null, roomjid, {matchBare: true});
-                } else if (this.PRANSWER) {
-                    sess.sendAnswer(true);
-                }
-            } else {
-                sess = new JingleSession($(iq).attr('to'), $(iq).find('jingle').attr('sid'), this.connection);
-                sess.peerjid = $(iq).attr('from');
-                sess.sendTerminate('busy');
-                sess.terminate();
-                delete sess;
-            }
+            // the callback should either 
+            // .sendAnswer and .accept
+            // or .sendTerminate -- not necessarily synchronus
+            $(document).trigger('callincoming.jingle', [sess.sid]);
             break;
         case 'session-accept':
             sess.setRemoteDescription($(iq).find('>jingle>content'), 'answer');
@@ -179,7 +160,7 @@ Strophe.addConnectionPlugin('jingle', {
     getStunAndTurnCredentials: function() {
         // get stun and turn configuration from server via xep-0215
         // uses time-limited credentials as described in
-        // https://docs.google.com/document/d/1mG7eXFQ5o-ypMWQ1IzdkBQL0UBkLN1xXUJhJcIF5ujQ/edit
+        // http://tools.ietf.org/html/draft-uberti-behave-turn-rest-00
         //
         // see https://code.google.com/p/prosody-modules/source/browse/mod_turncredentials/mod_turncredentials.lua
         // for a prosody module which implements this

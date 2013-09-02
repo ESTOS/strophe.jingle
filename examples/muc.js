@@ -201,6 +201,10 @@ function onCallIncoming(event, sid) {
     var sess = connection.jingle.sessions[sid];
     sess.sendAnswer();
     sess.accept();
+
+    // alternatively...
+    //sess.terminate(busy)
+    //connection.jingle.terminate(sid);
 }
 
 function onCallActive(event, videoelem, sid) {
