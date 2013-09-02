@@ -17,11 +17,13 @@ function JingleSession(me, sid, connection) {
     this.stopTime = null;
     this.media_constraints = null;
     this.pc_constraints = null;
-    this.ice_config = {};
+    this.ice_config = {},
+    this.drip_container = [];
 
     this.noearlycandidates = false; // TODO: remove once WRTC-30 bug is closed
     this.usetrickle = true; // TODO: usetrickle = false and noearlycandidates is unlikely to work
     this.usepranswer = false; // early transport warmup -- mind you, this might fail. depends on webrtc issue 1718
+    this.usedrip = true; // dripping is sending trickle candidates not one-by-one
 
     this.hadstuncandidate = false;
     this.hadturncandidate = false;
@@ -165,6 +167,62 @@ JingleSession.prototype.sendIceCandidate = function(candidate) {
         console.log(event.candidate, jcand);
 
         if (this.usetrickle) {
+            if (this.use_drip) {
+                if (this.drip_container.length == 0) {
+                    // start 10ms callout
+                    console.warn(new Date().getTime(), 'start dripping');
+                    window.setTimeout(function() {
+                        console.warn("dripping", ob.drip_container.sort(function(a,b) {return a.sdpMLineIndex > b.sdpMLineIndex; }));
+                        if (ob.drip_container.length == 0) return;
+                        var cand = $iq({to: ob.peerjid, type: 'set'})
+                            .c('jingle', {xmlns: 'urn:xmpp:jingle:1',
+                               action: 'transport-info',
+                               initiator: ob.initiator,
+                               sid: ob.sid});
+                        for (var mid = 0; mid < ob.localSDP.media.length; mid++) {
+                            var cands = ob.drip_container.filter(function(el) { return el.sdpMLineIndex == mid; });
+                            if (cands.length > 0) {
+                                cand.c('content', {creator: ob.initiator == ob.me ? 'initiator' : 'responder',
+                                       name: cands[0].sdpMid
+                                })
+                                .c('transport', SDPUtil.iceparams(ob.localSDP.media[mid], ob.localSDP.session));
+                                for (var i = 0; i < cands.length; i++) {
+                                    cand.c('candidate', SDPUtil.candidateToJingle(cands[i].candidate)).up();
+                                }
+                                // add fingerprint
+                                if (SDPUtil.find_line(ob.localSDP.media[mid], 'a=fingerprint:', ob.localSDP.session)) {
+                                    var tmp = SDPUtil.parse_fingerprint(SDPUtil.find_line(ob.localSDP.media[mid], 'a=fingerprint:', ob.localSDP.session));
+                                    tmp.required = true;
+                                    cand.c('fingerprint').t(tmp.fingerprint);
+                                    delete tmp.fingerprint;
+                                    cand.attrs(tmp);
+                                    cand.up();
+                                }
+                                cand.up(); // transport
+                                cand.up(); // content
+                                this.connection.sendIQ(cand,
+                                    function() { 
+                                        console.log('transport info ack'); 
+                                    },
+                                    function(stanza) { 
+                                        console.error('transport info error'); 
+                                        var error = ($(stanza).find('error').length) ? {
+                                            code: $(stanza).find('error').attr('code'),
+                                            reason: $(stanza).find('error :first')[0].tagName,
+                                        }:{};
+                                        error.source = 'offer';
+                                        $(document).trigger('error.jingle', [ob.sid, error]);
+                                    },
+                                10000);
+                            }
+                        }
+                        console.warn(cand.toString());
+                        ob.drip_container = [];
+                    }, 10);
+                }
+                this.drip_container.push(event.candidate);
+                return;
+            }
             // map to transport-info
             var cand = $iq({to: this.peerjid, type: 'set'})
                 .c('jingle', {xmlns: 'urn:xmpp:jingle:1',
