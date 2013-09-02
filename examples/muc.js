@@ -198,6 +198,9 @@ function onMediaFailure() {
 
 function onCallIncoming(event, sid) {
     setStatus('incoming call' + sid);
+    var sess = connection.jingle.sessions[sid];
+    sess.sendAnswer();
+    sess.accept();
 }
 
 function onCallActive(event, videoelem, sid) {

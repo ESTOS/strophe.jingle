@@ -578,14 +578,16 @@ JingleSession.prototype.sendTerminate = function(reason, text) {
         term.up().c('text').t(text);
     
     this.connection.sendIQ(term,
-                   function() {
-                   console.log('terminate ack');
-                   obj.peerconnection.close();
-                   obj.peerconnection = null;
-                   obj.terminate();
-                   },
-                   function() { console.log('terminate error'); },
-                   10000);
+        function() {
+            console.log('terminate ack');
+            obj.peerconnection.close();
+            obj.peerconnection = null;
+            obj.terminate();
+        },
+        function() { 
+            console.log('terminate error'); 
+        },
+    10000);
 };
 
 JingleSession.prototype.sendMute = function(muted, content) {
