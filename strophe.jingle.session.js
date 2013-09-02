@@ -20,8 +20,7 @@ function JingleSession(me, sid, connection) {
     this.ice_config = {},
     this.drip_container = [];
 
-    this.noearlycandidates = false; // TODO: remove once WRTC-30 bug is closed
-    this.usetrickle = true; // TODO: usetrickle = false and noearlycandidates is unlikely to work
+    this.usetrickle = true;
     this.usepranswer = false; // early transport warmup -- mind you, this might fail. depends on webrtc issue 1718
     this.usedrip = false; // dripping is sending trickle candidates not one-by-one
 
@@ -342,10 +341,6 @@ JingleSession.prototype.createdOffer = function(sdp) {
         10000);
     }
     sdp.sdp = this.localSDP.raw;
-    if (this.noearlycandidates) {
-        console.log('delaying setLocalDescription...');
-        return;
-    }
     try {
         this.peerconnection.setLocalDescription(sdp);
     } catch (e) {
@@ -367,20 +362,6 @@ JingleSession.prototype.setRemoteDescription = function(elem, desctype) {
     console.log('setting remote description... ', desctype);
     this.remoteSDP = new SDP('');
     this.remoteSDP.fromJingle(elem);
-    //this.remoteSDP = new SDP(elem.text());
-
-    /*
-    // hack to remove a=fingerprint while DTLS support on android is broken
-    if (navigator.userAgent.indexOf('Android') != -1) {
-        while (SDPUtil.find_line(this.remoteSDP.raw, 'a=fingerprint:')) {
-            this.remoteSDP.raw = this.remoteSDP.raw.replace(SDPUtil.find_line(this.remoteSDP.raw, 'a=fingerprint:') + '\r\n', '');
-        }
-    }
-    */
-    if (this.noearlycandidates && desctype == 'answer') {
-        console.warn('delayed setLocalDescription is here...');
-        this.peerconnection.setLocalDescription(new RTCSessionDescription({type: 'offer', sdp: this.localSDP.raw}));
-    }
     if (this.peerconnection.remoteDescription != null) {
         console.log('setRemoteDescription when remote description is not null, should be pranswer', this.peerconnection.remoteDescription);
         if (this.peerconnection.remoteDescription.type == 'pranswer') {
@@ -597,14 +578,16 @@ JingleSession.prototype.sendTerminate = function(reason, text) {
         term.up().c('text').t(text);
     
     this.connection.sendIQ(term,
-                   function() {
-                   console.log('terminate ack');
-                   obj.peerconnection.close();
-                   obj.peerconnection = null;
-                   obj.terminate();
-                   },
-                   function() { console.log('terminate error'); },
-                   10000);
+        function() {
+            console.log('terminate ack');
+            obj.peerconnection.close();
+            obj.peerconnection = null;
+            obj.terminate();
+        },
+        function() { 
+            console.log('terminate error'); 
+        },
+    10000);
 };
 
 JingleSession.prototype.sendMute = function(muted, content) {

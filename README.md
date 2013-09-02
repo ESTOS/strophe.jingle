@@ -13,7 +13,7 @@ Features:
 - a sample demonstrating the use of this to build a federated multi-user conference (in full-mesh mode). When [hark](https://github.com/latentflip/hark) is available, the local audio volume is visualized (in Chrome M29+).
 
 Events:
-- callincoming.jingle (sid)
+- callincoming.jingle (sid) -- you should accept the session here
 - callterminated.jingle (sid)
 - nostuncandidates.jingle (sid)
 - remotestreamadded.jingle (event, sid)
