@@ -200,7 +200,7 @@ JingleSession.prototype.sendIceCandidate = function(candidate) {
                                 cand.up(); // content
                             }
                         }
-                        this.connection.sendIQ(cand,
+                        ob.connection.sendIQ(cand,
                             function() { 
                                 console.log('transport info ack'); 
                             },
