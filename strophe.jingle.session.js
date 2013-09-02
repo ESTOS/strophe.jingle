@@ -23,7 +23,7 @@ function JingleSession(me, sid, connection) {
     this.noearlycandidates = false; // TODO: remove once WRTC-30 bug is closed
     this.usetrickle = true; // TODO: usetrickle = false and noearlycandidates is unlikely to work
     this.usepranswer = false; // early transport warmup -- mind you, this might fail. depends on webrtc issue 1718
-    this.usedrip = true; // dripping is sending trickle candidates not one-by-one
+    this.usedrip = false; // dripping is sending trickle candidates not one-by-one
 
     this.hadstuncandidate = false;
     this.hadturncandidate = false;
@@ -170,9 +170,7 @@ JingleSession.prototype.sendIceCandidate = function(candidate) {
             if (this.use_drip) {
                 if (this.drip_container.length == 0) {
                     // start 10ms callout
-                    console.warn(new Date().getTime(), 'start dripping');
                     window.setTimeout(function() {
-                        console.warn("dripping", ob.drip_container.sort(function(a,b) {return a.sdpMLineIndex > b.sdpMLineIndex; }));
                         if (ob.drip_container.length == 0) return;
                         var cand = $iq({to: ob.peerjid, type: 'set'})
                             .c('jingle', {xmlns: 'urn:xmpp:jingle:1',
@@ -200,23 +198,22 @@ JingleSession.prototype.sendIceCandidate = function(candidate) {
                                 }
                                 cand.up(); // transport
                                 cand.up(); // content
-                                this.connection.sendIQ(cand,
-                                    function() { 
-                                        console.log('transport info ack'); 
-                                    },
-                                    function(stanza) { 
-                                        console.error('transport info error'); 
-                                        var error = ($(stanza).find('error').length) ? {
-                                            code: $(stanza).find('error').attr('code'),
-                                            reason: $(stanza).find('error :first')[0].tagName,
-                                        }:{};
-                                        error.source = 'offer';
-                                        $(document).trigger('error.jingle', [ob.sid, error]);
-                                    },
-                                10000);
                             }
                         }
-                        console.warn(cand.toString());
+                        this.connection.sendIQ(cand,
+                            function() { 
+                                console.log('transport info ack'); 
+                            },
+                            function(stanza) { 
+                                console.error('transport info error'); 
+                                var error = ($(stanza).find('error').length) ? {
+                                    code: $(stanza).find('error').attr('code'),
+                                    reason: $(stanza).find('error :first')[0].tagName,
+                                }:{};
+                                error.source = 'offer';
+                                $(document).trigger('error.jingle', [ob.sid, error]);
+                            },
+                        10000);
                         ob.drip_container = [];
                     }, 10);
                 }
