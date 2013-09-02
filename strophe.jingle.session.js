@@ -167,18 +167,20 @@ JingleSession.prototype.sendIceCandidate = function(candidate) {
         console.log(event.candidate, jcand);
 
         if (this.usetrickle) {
-            if (this.use_drip) {
+            if (this.usedrip) {
                 if (this.drip_container.length == 0) {
                     // start 10ms callout
                     window.setTimeout(function() {
                         if (ob.drip_container.length == 0) return;
+                        var allcands = ob.drip_container;
+                        ob.drip_container = [];
                         var cand = $iq({to: ob.peerjid, type: 'set'})
                             .c('jingle', {xmlns: 'urn:xmpp:jingle:1',
                                action: 'transport-info',
                                initiator: ob.initiator,
                                sid: ob.sid});
                         for (var mid = 0; mid < ob.localSDP.media.length; mid++) {
-                            var cands = ob.drip_container.filter(function(el) { return el.sdpMLineIndex == mid; });
+                            var cands = allcands.filter(function(el) { return el.sdpMLineIndex == mid; });
                             if (cands.length > 0) {
                                 cand.c('content', {creator: ob.initiator == ob.me ? 'initiator' : 'responder',
                                        name: cands[0].sdpMid
@@ -200,6 +202,8 @@ JingleSession.prototype.sendIceCandidate = function(candidate) {
                                 cand.up(); // content
                             }
                         }
+                        // might merge last-candidate notification into this, but it is called alot later. See webrtc issue #2340
+                        //console.log('was this the last candidate', ob.lasticecandidate);
                         ob.connection.sendIQ(cand,
                             function() { 
                                 console.log('transport info ack'); 
@@ -214,7 +218,6 @@ JingleSession.prototype.sendIceCandidate = function(candidate) {
                                 $(document).trigger('error.jingle', [ob.sid, error]);
                             },
                         10000);
-                        ob.drip_container = [];
                     }, 10);
                 }
                 this.drip_container.push(event.candidate);
