@@ -130,7 +130,7 @@ JingleSession.prototype.accept = function() {
         // FIXME: change any inactive to sendrecv or whatever they were originally
         sdp = sdp.replace('a=inactive', 'a=sendrecv');
     }
-    this.peerconnection.setLocalDescription(new RTCSessionDescription({type: 'answer', sdp: sdp}, 
+    this.peerconnection.setLocalDescription(new RTCSessionDescription({type: 'answer', sdp: sdp}), 
         function() {
             console.log('setLocalDescription success');
         }, function(e) {
