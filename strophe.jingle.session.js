@@ -130,12 +130,12 @@ JingleSession.prototype.accept = function() {
         // FIXME: change any inactive to sendrecv or whatever they were originally
         sdp = sdp.replace('a=inactive', 'a=sendrecv');
     }
-    try {
-        this.peerconnection.setLocalDescription(new RTCSessionDescription({type: 'answer', sdp: sdp}));
-    } catch (e) {
-        console.error('setLocalDescription failed');
-        console.error(e.toString());
-    }
+    this.peerconnection.setLocalDescription(new RTCSessionDescription({type: 'answer', sdp: sdp}), 
+        function() {
+            console.log('setLocalDescription success');
+        }, function(e) {
+            console.error('setLocalDescription failed', e);
+    });
 };
 
 JingleSession.prototype.terminate = function(reason) {
@@ -341,12 +341,11 @@ JingleSession.prototype.createdOffer = function(sdp) {
         10000);
     }
     sdp.sdp = this.localSDP.raw;
-    try {
-        this.peerconnection.setLocalDescription(sdp);
-    } catch (e) {
-        console.error('setLocalDescription failed');
-        console.error(e.toString());
-    }
+    this.peerconnection.setLocalDescription(sdp, function() {
+            console.log('setLocalDescription success');
+        }, function(e) {
+            console.error('setLocalDescription failed', e);
+    });
     var cands = SDPUtil.find_lines(this.localSDP.raw, 'a=candidate:');
     for (var i = 0; i < cands.length; i++) {
         var cand = SDPUtil.parse_icecandidate(cands[i]);
@@ -391,7 +390,7 @@ JingleSession.prototype.setRemoteDescription = function(elem, desctype) {
     }
     var remotedesc = new RTCSessionDescription({type: desctype, sdp: this.remoteSDP.raw});
     
-    this.peerconnection.setRemoteDescription(remotedesc, function(e){
+    this.peerconnection.setRemoteDescription(remotedesc, function() {
         console.log('setRemoteDescription success');
     }, function(e){
         console.error('setRemoteDescription error', e);
@@ -546,12 +545,11 @@ JingleSession.prototype.createdAnswer = function(sdp, provisional) {
         }
     }
     sdp.sdp = this.localSDP.raw;
-    try {
-        this.peerconnection.setLocalDescription(sdp);
-    } catch (e) {
-        console.error('setLocalDescription failed');
-        console.error(e.toString());
-    }
+    this.peerconnection.setLocalDescription(sdp, function() {
+            console.log('setLocalDescription success');
+        }, function(e) {
+            console.error('setLocalDescription failed', e);
+    });
     var cands = SDPUtil.find_lines(this.localSDP.raw, 'a=candidate:');
     for (var i = 0; i < cands.length; i++) {
         var cand = SDPUtil.parse_icecandidate(cands[i]);

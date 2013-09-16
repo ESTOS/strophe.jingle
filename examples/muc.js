@@ -363,10 +363,7 @@ $(document).ready(function() {
         connection.rawInput = function(data) { console.log('RECV: ' + data); };
         connection.rawOutput = function(data) { console.log('SEND: ' + data); };
     }
-    connection.jingle.PRANSWER = PRANSWER;
-    connection.jingle.AUTOACCEPT = AUTOACCEPT;
     connection.jingle.ice_config = ice_config;
-    connection.jingle.MULTIPARTY = MULTIPARTY;
     if (RTC) {
         connection.jingle.pc_constraints = RTC.pc_constraints;
     }
