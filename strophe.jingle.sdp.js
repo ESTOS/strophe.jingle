@@ -297,6 +297,9 @@ SDP.prototype.jingle2media = function(content) {
     case 'responder':
         media += 'a=recvonly\r\n';
         break;
+    case 'none':
+        media += 'a=inactive\r\n';
+        break;
     case 'both':
     default:
         media += 'a=sendrecv\r\n';
