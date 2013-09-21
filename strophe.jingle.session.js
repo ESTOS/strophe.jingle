@@ -93,6 +93,7 @@ JingleSession.prototype.initiate = function(peerjid, isInitiator) {
 };
 
 JingleSession.prototype.accept = function() {
+    var ob = this;
     this.state = 'active';
 
     var pranswer = this.peerconnection.localDescription;
@@ -121,9 +122,20 @@ JingleSession.prototype.accept = function() {
            sid: this.sid });
     prsdp.toJingle(accept, this.initiator == this.me ? 'initiator' : 'responder');
     this.connection.sendIQ(accept,
-                   function() { console.log('session accept ack'); },
-                   function() { console.error('session accept error'); },
-                   10000);
+        function() { 
+            var ack = {};
+            ack.source = 'answer';
+            $(document).trigger('ack.jingle', [ob.sid, ack]);
+        }, 
+        function(stanza) { 
+            var error = ($(stanza).find('error').length) ? {
+                code: $(stanza).find('error').attr('code'),
+                reason: $(stanza).find('error :first')[0].tagName,
+            }:{};
+            error.source = 'answer';
+            $(document).trigger('error.jingle', [ob.sid, error]);
+        }, 
+    10000);
 
     var sdp = this.peerconnection.localDescription.sdp;
     while (SDPUtil.find_line(sdp, 'a=inactive')) {
@@ -205,15 +217,16 @@ JingleSession.prototype.sendIceCandidate = function(candidate) {
                         //console.log('was this the last candidate', ob.lasticecandidate);
                         ob.connection.sendIQ(cand,
                             function() { 
-                                console.log('transport info ack'); 
+                                var ack = {};
+                                ack.source = 'transportinfo';
+                                $(document).trigger('ack.jingle', [ob.sid, ack]);
                             },
                             function(stanza) { 
-                                console.error('transport info error'); 
                                 var error = ($(stanza).find('error').length) ? {
                                     code: $(stanza).find('error').attr('code'),
                                     reason: $(stanza).find('error :first')[0].tagName,
                                 }:{};
-                                error.source = 'offer';
+                                error.source = 'transportinfo';
                                 $(document).trigger('error.jingle', [ob.sid, error]);
                             },
                         10000);
@@ -244,19 +257,21 @@ JingleSession.prototype.sendIceCandidate = function(candidate) {
                 cand.up();
             }
             this.connection.sendIQ(cand,
-                           function() { 
-                               console.log('transport info ack'); 
-                           },
-                           function(stanza) { 
-                                console.error('transport info error'); 
-                                var error = ($(stanza).find('error').length) ? {
-                                    code: $(stanza).find('error').attr('code'),
-                                    reason: $(stanza).find('error :first')[0].tagName,
-                                }:{};
-                                error.source = 'offer';
-                                $(document).trigger('error.jingle', [ob.sid, error]);
-                            },
-                           10000);
+               function() { 
+                   var ack = {};
+                   ack.source = 'transportinfo';
+                   $(document).trigger('ack.jingle', [ob.sid, ack]);
+               },
+               function(stanza) { 
+                    console.error('transport info error'); 
+                    var error = ($(stanza).find('error').length) ? {
+                        code: $(stanza).find('error').attr('code'),
+                        reason: $(stanza).find('error :first')[0].tagName,
+                    }:{};
+                    error.source = 'transportinfo';
+                    $(document).trigger('error.jingle', [ob.sid, error]);
+                },
+            10000);
         }
     } else {
         console.log('sendIceCandidate: last candidate.');
@@ -273,11 +288,13 @@ JingleSession.prototype.sendIceCandidate = function(candidate) {
             this.connection.sendIQ(init,
                 function() {
                     console.log('session initiate ack');
+                   var ack = {};
+                   ack.source = 'offer';
+                   $(document).trigger('ack.jingle', [ob.sid, ack]);
                 },
                 function(stanza) {
                     ob.state = 'error';
                     ob.peerconnection.close();
-                    console.error('session initiate error');
                     var error = ($(stanza).find('error').length) ? {
                         code: $(stanza).find('error').attr('code'),
                         reason: $(stanza).find('error :first')[0].tagName,
@@ -325,12 +342,13 @@ JingleSession.prototype.createdOffer = function(sdp) {
         this.localSDP.toJingle(init, this.initiator == this.me ? 'initiator' : 'responder');
         this.connection.sendIQ(init,
             function() {
-                console.log('offer initiate ack');
+                var ack = {};
+                ack.source = 'offer';
+                $(document).trigger('ack.jingle', [ob.sid, ack]);
             },
             function(stanza) {
                 ob.state = 'error';
                 ob.peerconnection.close();
-                console.error('offer initiate error');
                 var error = ($(stanza).find('error').length) ? {
                     code: $(stanza).find('error').attr('code'),
                     reason: $(stanza).find('error :first')[0].tagName,
@@ -519,6 +537,7 @@ JingleSession.prototype.sendAnswer = function(provisional) {
 JingleSession.prototype.createdAnswer = function(sdp, provisional) {
     console.log('createAnswer callback');
     console.log(sdp);
+    var ob = this;
     this.localSDP = new SDP(sdp.sdp);
     this.localSDP.mangle();
     this.usepranswer = provisional == true;
@@ -533,9 +552,20 @@ JingleSession.prototype.createdAnswer = function(sdp, provisional) {
                    sid: this.sid });
             this.localSDP.toJingle(accept, this.initiator == this.me ? 'initiator' : 'responder');
             this.connection.sendIQ(accept,
-                           function() { console.log('session accept ack'); },
-                           function() { console.error('session accept error'); },
-                           10000);
+                function() { 
+                    var ack = {};
+                    ack.source = 'answer';
+                    $(document).trigger('ack.jingle', [ob.sid, ack]);
+                },
+                function(stanza) { 
+                    var error = ($(stanza).find('error').length) ? {
+                        code: $(stanza).find('error').attr('code'),
+                        reason: $(stanza).find('error :first')[0].tagName,
+                    }:{};
+                    error.source = 'answer';
+                    $(document).trigger('error.jingle', [ob.sid, error]);
+                },
+            10000);
         } else {
             sdp.type = 'pranswer';
             for (i = 0; i < this.localSDP.media.length; i++) {
@@ -577,13 +607,19 @@ JingleSession.prototype.sendTerminate = function(reason, text) {
     
     this.connection.sendIQ(term,
         function() {
-            console.log('terminate ack');
             obj.peerconnection.close();
             obj.peerconnection = null;
             obj.terminate();
+            var ack = {};
+            ack.source = 'terminate';
+            $(document).trigger('ack.jingle', [ob.sid, ack]);
         },
-        function() { 
-            console.log('terminate error'); 
+        function(stanza) { 
+            var error = ($(stanza).find('error').length) ? {
+                code: $(stanza).find('error').attr('code'),
+                reason: $(stanza).find('error :first')[0].tagName,
+            }:{};
+            $(document).trigger('ack.jingle', [ob.sid, error]);
         },
     10000);
 };

@@ -379,6 +379,12 @@ $(document).ready(function() {
     $(document).bind('remotestreamremoved.jingle', onRemoteStreamRemoved);
     $(document).bind('iceconnectionstatechange.jingle', onIceConnectionStateChanged);
     $(document).bind('nostuncandidates.jingle', noStunCandidates);
+    $(document).bind('ack.jingle', function(event, sid, ack) {
+        console.log('got stanza ack for ' + sid, ack);
+    });
+    $(document).bind('error.jingle', function(event, sid, err) {
+        console.log('got stanza error for ' + sid, err);
+    });
     if (RTC != null) {
         RTCPeerconnection = RTC.peerconnection;
         if (RTC.browser == 'firefox') {
