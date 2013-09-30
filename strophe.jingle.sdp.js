@@ -135,8 +135,7 @@ SDP.prototype.toJingle = function(elem, thecreator) {
             elem.up(); // end of description
         }
 
-        elem.c('transport', SDPUtil.iceparams(this.media[i], this.session));
-
+        elem.c('transport', {xmlns: 'urn:xmpp:jingle:transports:ice-udp:1'});
         // XEP-0320
         if (SDPUtil.find_line(this.media[i], 'a=fingerprint:', this.session)) {
             tmp = SDPUtil.parse_fingerprint(SDPUtil.find_line(this.media[i], 'a=fingerprint:', this.session));
@@ -146,16 +145,19 @@ SDP.prototype.toJingle = function(elem, thecreator) {
             elem.attrs(tmp);
             elem.up();
         }
-
-        // XEP-0176
-        if (SDPUtil.find_line(this.media[i], 'a=candidate:', this.session)) { // add any a=candidate lines
-            lines = SDPUtil.find_lines(this.media[i], 'a=candidate:') || SDPUtil.find_lines(this.session, 'a=candidate');
-            for (j = 0; j < lines.length; j++) {
-                tmp = SDPUtil.candidateToJingle(lines[j]);
-                elem.c('candidate', tmp).up();
+        tmp = SDPUtil.iceparams(this.media[i], this.session);
+        if (tmp) {
+            elem.attrs(tmp);
+            // XEP-0176
+            if (SDPUtil.find_line(this.media[i], 'a=candidate:', this.session)) { // add any a=candidate lines
+                lines = SDPUtil.find_lines(this.media[i], 'a=candidate:') || SDPUtil.find_lines(this.session, 'a=candidate');
+                for (j = 0; j < lines.length; j++) {
+                    tmp = SDPUtil.candidateToJingle(lines[j]);
+                    elem.c('candidate', tmp).up();
+                }
             }
+            elem.up(); // end of transport
         }
-        elem.up(); // end of transport
 
         if (SDPUtil.find_line(this.media[i], 'a=sendrecv', this.session)) {
             elem.attrs({senders: 'both'});
@@ -165,6 +167,10 @@ SDP.prototype.toJingle = function(elem, thecreator) {
             elem.attrs({senders: 'responder'});
         } else if (SDPUtil.find_line(this.media[i], 'a=inactive', this.session)) {
             elem.attrs({senders: 'none'});
+        }
+        if (mline.port == '0') {
+            // estos hack to reject an m-line
+            elem.attrs({senders: 'rejected'});
         }
         elem.up(); // end of content
     }
@@ -260,6 +266,10 @@ SDP.prototype.jingle2media = function(content) {
 
     tmp = { media: desc.attr('media') };
     tmp.port = '1';
+    if (content.attr('senders') == 'rejected') {
+        // estos hack to reject an m-line.
+        tmp.port = '0'; 
+    }
     if (desc.find('encryption').length || content.find('transport>fingerprint').length) {
         tmp.proto = 'RTP/SAVPF';
     } else {
@@ -356,9 +366,14 @@ SDP.prototype.jingle2media = function(content) {
 
 SDPUtil = {
     iceparams: function(mediadesc, sessiondesc) {
-        var data = {xmlns: 'urn:xmpp:jingle:transports:ice-udp:1'};
-        data.ufrag = SDPUtil.parse_iceufrag(SDPUtil.find_line(mediadesc, 'a=ice-ufrag:', sessiondesc));
-        data.pwd = SDPUtil.parse_icepwd(SDPUtil.find_line(mediadesc, 'a=ice-pwd:', sessiondesc));
+        var data = null;
+        if (SDPUtil.find_line(mediadesc, 'a=ice-ufrag:', sessiondesc) &&
+            SDPUtil.find_line(mediadesc, 'a=ice-pwd:', sessiondesc)) {
+            data = {
+                ufrag: SDPUtil.parse_iceufrag(SDPUtil.find_line(mediadesc, 'a=ice-ufrag:', sessiondesc)),
+                pwd: SDPUtil.parse_icepwd(SDPUtil.find_line(mediadesc, 'a=ice-pwd:', sessiondesc))
+            }
+        }
         return data;
     },
     parse_iceufrag: function(line) {

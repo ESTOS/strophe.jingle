@@ -40,16 +40,37 @@ Strophe.addConnectionPlugin('jingle', {
               id: iq.getAttribute('id')
         });
         console.log('on jingle ' + action);
-        if ('session-initiate' != action && !(sid in this.sessions)) {
+        var sess = this.sessions[sid];
+        if ('session-initiate' != action) {
+            if (sess == null) {
+                ack.type = 'error';
+                ack.c('error', {type: 'cancel'})
+                   .c('item-not-found', {xmlns: 'urn:ietf:params:xml:ns:xmpp-stanzas'}).up()
+                   .c('unknown-session', {xmlns: 'urn:xmpp:jingle:errors:1'});
+                this.connection.send(ack);
+                return true;
+            }
+            // compare from to sess.peerjid (bare jid comparison for later compat with message-mode)
+            // local jid is not checked
+            if (Strophe.getBareJidFromJid(iq.getAttribute('from')) != Strophe.getBareJidFromJid(sess.peerjid)) {
+                console.warn('jid mismatch for session id', sid, iq.getAttribute('from'), sess.peerjid);
+                ack.type = 'error';
+                ack.c('error', {type: 'cancel'})
+                   .c('item-not-found', {xmlns: 'urn:ietf:params:xml:ns:xmpp-stanzas'}).up()
+                   .c('unknown-session', {xmlns: 'urn:xmpp:jingle:errors:1'});
+                this.connection.send(ack);
+                return true;
+            }
+        } else if (sess != null) {
+            // existing session with same session id
+            // this might be out-of-order if the sess.peerjid is the same as from
             ack.type = 'error';
             ack.c('error', {type: 'cancel'})
-               .c('item-not-found', {xmlns: 'urn:ietf:params:xml:ns:xmpp-stanzas'}).up()
-               .c('unknown-session', {xmlns: 'urn:xmpp:jingle:errors:1'});
-            this.connection.send(ack);
+               .c('service-unavailable', {xmlns: 'urn:ietf:params:xml:ns:xmpp-stanzas'}).up()
+            console.warn('duplicate session id', sid);
             return true;
         }
         this.connection.send(ack);
-        var sess = this.sessions[sid];
         // see http://xmpp.org/extensions/xep-0166.html#concepts-session
         switch (action) {
         case 'session-initiate':
