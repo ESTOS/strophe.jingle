@@ -331,7 +331,7 @@ JingleSession.prototype.createdOffer = function(sdp) {
     console.log('createdOffer', sdp);
     var ob = this;
     this.localSDP = new SDP(sdp.sdp);
-    this.localSDP.mangle();
+    //this.localSDP.mangle();
     if (this.usetrickle) {
         var init = $iq({to: this.peerjid,
                    type: 'set'})
@@ -538,7 +538,7 @@ JingleSession.prototype.createdAnswer = function(sdp, provisional) {
     console.log(sdp);
     var ob = this;
     this.localSDP = new SDP(sdp.sdp);
-    this.localSDP.mangle();
+    //this.localSDP.mangle();
     this.usepranswer = provisional == true;
     if (this.usetrickle) {
         if (!this.usepranswer) {
