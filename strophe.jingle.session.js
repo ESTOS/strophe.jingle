@@ -169,6 +169,7 @@ JingleSession.prototype.sendIceCandidate = function(candidate) {
             console.error('failed to get ice && jcand');
             return;
         }
+        ice.xmlns = 'urn:xmpp:jingle:transports:ice-udp:1';
 
         if (jcand.type === 'srflx') {
             this.hadstuncandidate = true;
@@ -193,10 +194,11 @@ JingleSession.prototype.sendIceCandidate = function(candidate) {
                         for (var mid = 0; mid < ob.localSDP.media.length; mid++) {
                             var cands = allcands.filter(function(el) { return el.sdpMLineIndex == mid; });
                             if (cands.length > 0) {
+                                var ice = SDPUtil.iceparams(ob.localSDP.media[mid], ob.localSDP.session);
+                                ice.xmlns = 'urn:xmpp:jingle:transports:ice-udp:1';
                                 cand.c('content', {creator: ob.initiator == ob.me ? 'initiator' : 'responder',
                                        name: cands[0].sdpMid
-                                })
-                                .c('transport', SDPUtil.iceparams(ob.localSDP.media[mid], ob.localSDP.session));
+                                }).c('transport', ice);
                                 for (var i = 0; i < cands.length; i++) {
                                     cand.c('candidate', SDPUtil.candidateToJingle(cands[i].candidate)).up();
                                 }
