@@ -26,3 +26,4 @@ Events:
 - unmute.jingle (sid, content)
 - ack.jingle (sid, ack)
 - error.jingle (sid, error)
+- packetloss.jingle (sid, loss) -- percentage of packets lost

@@ -211,6 +211,7 @@ function onCallActive(event, videoelem, sid) {
     setStatus('call active ' + sid);
     $(videoelem).appendTo('#largevideocontainer');
     arrangeVideos('#largevideocontainer >');
+    connection.jingle.sessions[sid].getStats(1000);
 }
 
 function onCallTerminated(event, sid, reason) {
@@ -384,6 +385,9 @@ $(document).ready(function() {
     });
     $(document).bind('error.jingle', function(event, sid, err) {
         console.log('got stanza error for ' + sid, err);
+    });
+    $(document).bind('packetloss.jingle', function(event, sid, loss) {
+        console.warn('packetloss', sid, loss);
     });
     if (RTC != null) {
         RTCPeerconnection = RTC.peerconnection;

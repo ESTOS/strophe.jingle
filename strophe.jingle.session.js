@@ -28,6 +28,8 @@ function JingleSession(me, sid, connection) {
     this.hadturncandidate = false;
     this.lasticecandidate = false;
 
+    this.statsintervall = null;
+
     this.reason = null;
 }
 
@@ -154,6 +156,10 @@ JingleSession.prototype.terminate = function(reason) {
     this.state = 'ended';
     this.reason = reason;
     this.peerconnection.close();
+    if (this.statsintervall != null) {
+        window.clearInterval(this.statsInterval);
+        this.statsintervall = null;
+    }
 };
 
 JingleSession.prototype.active = function() {
@@ -623,6 +629,10 @@ JingleSession.prototype.sendTerminate = function(reason, text) {
             $(document).trigger('ack.jingle', [ob.sid, error]);
         },
     10000);
+    if (this.statsintervall != null) {
+        window.clearInterval(this.statsInterval);
+        this.statsintervall = null;
+    }
 };
 
 JingleSession.prototype.sendMute = function(muted, content) {
@@ -650,3 +660,50 @@ JingleSession.prototype.sendRinging = function() {
     info.c('ringing', {xmlns: 'urn:xmpp:jingle:apps:rtp:info:1'});
     this.connection.send(info);
 };
+
+JingleSession.prototype.getStats = function(interval) {
+    var ob = this;
+    var recv = {audio: 0, video: 0};
+    var lost = {audio: 0, video: 0}
+    var lastrecv = {audio: 0, video: 0};
+    var lastlost = {audio: 0, video: 0};
+    var loss = {audio: 0, video: 0};
+    var delta = {audio: 0, video: 0};
+    this.statsinterval = window.setInterval(function() {
+        if (ob && ob.peerconnection && ob.peerconnection.getStats) {
+            ob.peerconnection.getStats(function(stats) {
+                var results = stats.result();
+                // TODO: there are so much statistics you can get from this..
+                for (var i = 0; i < results.length; ++i) {
+                    if (results[i].type == 'ssrc') {
+                        var packetsrecv = results[i].stat('packetsReceived');
+                        var packetslost = results[i].stat('packetsLost');
+                        if (packetsrecv && packetslost) {
+                            packetsrecv = parseInt(packetsrecv);
+                            packetslost = parseInt(packetslost);
+                            
+                            if (results[i].stat('googFrameRateReceived')) {
+                                lastlost.video = lost.video;
+                                lastrecv.video = recv.video;
+                                recv.video = packetsrecv;
+                                lost.video = packetslost;
+                            } else {
+                                lastlost.audio = lost.audio;
+                                lastrecv.audio = recv.audio;
+                                recv.audio = packetsrecv;
+                                lost.audio = packetslost;
+                            }
+                        }                           
+                    }
+                }
+                delta.audio = recv.audio - lastrecv.audio;
+                delta.video = recv.video - lastrecv.video;
+                loss.audio = (delta.audio > 0) ? Math.ceil(100*(lost.audio - lastlost.audio)/delta.audio) : 0;
+                loss.video = (delta.video > 0) ? Math.ceil(100*(lost.video - lastlost.video)/delta.video) : 0;
+                $(document).trigger('packetloss.jingle', [ob.sid, loss]);
+            });
+        }
+    }, interval || 3000);
+    return this.statsinterval;
+};
+
