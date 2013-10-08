@@ -28,7 +28,7 @@ function JingleSession(me, sid, connection) {
     this.hadturncandidate = false;
     this.lasticecandidate = false;
 
-    this.statsintervall = null;
+    this.statsinterval = null;
 
     this.reason = null;
 }
@@ -156,9 +156,9 @@ JingleSession.prototype.terminate = function(reason) {
     this.state = 'ended';
     this.reason = reason;
     this.peerconnection.close();
-    if (this.statsintervall != null) {
-        window.clearInterval(this.statsInterval);
-        this.statsintervall = null;
+    if (this.statsinterval != null) {
+        window.clearInterval(this.statsinterval);
+        this.statsinterval = null;
     }
 };
 
@@ -629,9 +629,9 @@ JingleSession.prototype.sendTerminate = function(reason, text) {
             $(document).trigger('ack.jingle', [ob.sid, error]);
         },
     10000);
-    if (this.statsintervall != null) {
-        window.clearInterval(this.statsInterval);
-        this.statsintervall = null;
+    if (this.statsinterval != null) {
+        window.clearInterval(this.statsinterval);
+        this.statsinterval = null;
     }
 };
 
