@@ -46,6 +46,11 @@ SDP.prototype.toJingle = function(elem, thecreator) {
     if (SDPUtil.find_line(this.session, 'a=group:BUNDLE ')) {
         bundle = SDPUtil.find_line(this.session, 'a=group:BUNDLE ').split(' ');
         bundle.shift();
+        elem.c('group', {xmlns:'urn:ietf:rfc:5888', type:'BUNDLE'});
+        for (i = 0; i < bundle.length; i++) {
+            elem.c('content', {name: bundle[i]}).up();
+        }
+        elem.up();
     }
     for (i = 0; i < this.media.length; i++) {
         mline = SDPUtil.parse_mline(this.media[i].split('\r\n')[0]);
