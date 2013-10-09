@@ -224,27 +224,38 @@ SDP.prototype.RtcpFbFromJingle = function(elem, payloadtype) { // XEP-0293
 };
 
 // construct an SDP from a jingle stanza
-SDP.prototype.fromJingle = function(stanza) {
+SDP.prototype.fromJingle = function(jingle) {
     var obj = this;
     this.raw = 'v=0\r\n' +
         'o=- ' + '1923518516' + ' 2 IN IP4 0.0.0.0\r\n' +// FIXME
         's=-\r\n' +
         't=0 0\r\n';
     // http://tools.ietf.org/html/draft-ietf-mmusic-sdp-bundle-negotiation-04#section-8
-    // assume all contents are in the same bundle group, can be improved upon later
-    // TODO: replace by proper mapping
-    var bundle = $(stanza).filter(function(idx, content) { 
-        //elem.c('bundle', {xmlns:'http://estos.de/ns/bundle'});
-        return $(content).find('>bundle').length > 0;
-    }).map(function(idx, content) { 
-        return $(content).attr('name'); 
-    }).get();
-    if (bundle.length) {
-        this.raw += 'a=group:BUNDLE ' + bundle.join(' ') + '\r\n';
+    if ($(jingle).find('>group[xmlns="urn:ietf:rfc:5888"]').length) {
+        $(jingle).find('>group[xmlns="urn:ietf:rfc:5888"]').each(function(idx, group) { 
+            var contents = $(group).find('>content').map(function(idx, content) { 
+                return $(content).attr('name'); 
+            }).get();
+            if ($(group).attr('type') != null && contents.length > 0) {
+                obj.raw += 'a=group:' + $(group).attr('type') + ' ' + contents.join(' ') + '\r\n';
+            }
+        });
+    } else {
+        // for backward compability, to be removed soon
+        // assume all contents are in the same bundle group, can be improved upon later
+        var bundle = $(jingle).find('>content').filter(function(idx, content) { 
+            //elem.c('bundle', {xmlns:'http://estos.de/ns/bundle'});
+            return $(content).find('>bundle').length > 0;
+        }).map(function(idx, content) { 
+            return $(content).attr('name'); 
+        }).get();
+        if (bundle.length) {
+            this.raw += 'a=group:BUNDLE ' + bundle.join(' ') + '\r\n';
+        }
     }
 
     this.session = this.raw;
-    stanza.each(function() {
+    jingle.find('>content').each(function() {
         var m = obj.jingle2media($(this)); 
         obj.media.push(m);
     });
