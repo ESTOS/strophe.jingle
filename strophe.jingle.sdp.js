@@ -42,15 +42,23 @@ SDP.prototype.mangle = function() {
 // add content's to a jingle element
 SDP.prototype.toJingle = function(elem, thecreator) {
     var i, j, k, mline, ssrc, rtpmap, tmp, lines;
-    var bundle = [];
-    if (SDPUtil.find_line(this.session, 'a=group:BUNDLE ')) {
+    // new bundle plan
+    if (SDPUtil.find_line(this.session, 'a=group:')) {
+        lines = SDPUtil.find_lines(this.session, 'a=group:');
+        for (i = 0; i < lines.length; i++) {
+            tmp = lines[i].split(' ');
+            elem.c('group', {xmlns:'urn:ietf:rfc:5888', type:tmp.shift().substr(8)});
+            for (j = 0; j < tmp.length; j++) {
+                elem.c('content', {name: tmp[j]}).up();
+            }
+            elem.up();
+        }
+    }
+    // old bundle plan, to be removed
+    var bundle;
+    if (SDPUtil.find_line(this.session, 'a=group:BUNDLE')) {
         bundle = SDPUtil.find_line(this.session, 'a=group:BUNDLE ').split(' ');
         bundle.shift();
-        elem.c('group', {xmlns:'urn:ietf:rfc:5888', type:'BUNDLE'});
-        for (i = 0; i < bundle.length; i++) {
-            elem.c('content', {name: bundle[i]}).up();
-        }
-        elem.up();
     }
     for (i = 0; i < this.media.length; i++) {
         mline = SDPUtil.parse_mline(this.media[i].split('\r\n')[0]);
