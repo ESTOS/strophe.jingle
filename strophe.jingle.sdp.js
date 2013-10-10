@@ -315,7 +315,7 @@ SDP.prototype.jingle2media = function(content) {
             console.warn('tmp3');
             media += SDPUtil.build_icepwd(tmp.attr('pwd')) + '\r\n';
         }
-        content.find('>transport[xmlns="urn:xmpp:jingle:transports:ice-udp:1"]>fingerprint').each(function() {
+        tmp.find('>fingerprint').each(function() {
             media += 'a=fingerprint:' + $(this).attr('hash');
             media += ' ' + $(this).text();
             media += '\r\n';
