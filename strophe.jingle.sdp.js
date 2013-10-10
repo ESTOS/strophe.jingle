@@ -104,11 +104,13 @@ SDP.prototype.toJingle = function(elem, thecreator) {
 
                 elem.up();
             }
-            elem.c('encryption', {required: 1});
             if (SDPUtil.find_line(this.media[i], 'a=crypto:', this.session)) {
-                elem.c('crypto', SDPUtil.parse_crypto(SDPUtil.find_line(this.media[i], 'a=crypto:', this.session))).up();
+                elem.c('encryption', {required: 1});
+                $.each(SDPUtil.find_lines(this.media[i], 'a=crypto:', this.session), function(idx, line) {
+                    elem.c('crypto', SDPUtil.parse_crypto(line)).up();
+                });
+                elem.up(); // end of encryption
             }
-            elem.up(); // end of encryption
 
             if (ssrc) {
                 elem.c('ssrc', SDPUtil.parse_ssrc(this.media[i])).up(); // ssrc is part of description
@@ -294,7 +296,7 @@ SDP.prototype.jingle2media = function(content) {
         // estos hack to reject an m-line.
         tmp.port = '0'; 
     }
-    if (desc.find('encryption').length || content.find('transport>fingerprint').length) {
+    if (content.find('transport>fingerprint').length || desc.find('encryption').length) {
         tmp.proto = 'RTP/SAVPF';
     } else {
         tmp.proto = 'RTP/AVPF';
@@ -342,16 +344,15 @@ SDP.prototype.jingle2media = function(content) {
     }
 
     if (desc.find('encryption').length) {
-        tmp = desc.find('encryption>crypto');
-        if (tmp.length) {
-            media += 'a=crypto:' + tmp.attr('tag');
-            media += ' ' + tmp.attr('crypto-suite');
-            media += ' ' + tmp.attr('key-params');
-            if (tmp.attr('session-params')) {
-                media += ' ' + tmp.attr('session-params');
+        desc.find('encryption>crypto').each(function() {
+            media += 'a=crypto:' + $(this).attr('tag');
+            media += ' ' + $(this).attr('crypto-suite');
+            media += ' ' + $(this).attr('key-params');
+            if ($(this).attr('session-params')) {
+                media += ' ' + $(this).attr('session-params');
             }
             media += '\r\n';
-        }
+        });
     }
     desc.find('payload-type').each(function() {
         media += SDPUtil.build_rtpmap(this) + '\r\n';
