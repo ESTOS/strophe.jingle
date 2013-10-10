@@ -304,12 +304,16 @@ SDP.prototype.jingle2media = function(content) {
     media += SDPUtil.build_mline(tmp) + '\r\n';
     media += 'c=IN IP4 0.0.0.0\r\n';
     media += 'a=rtcp:1 IN IP4 0.0.0.0\r\n';
-    if (content.find('>transport[xmlns="urn:xmpp:jingle:transports:ice-udp:1"]').length) {
-        if (content.find('>transport[xmlns="urn:xmpp:jingle:transports:ice-udp:1"]').attr('ufrag')) {
-            media += SDPUtil.build_iceufrag(content.find('>transport[xmlns="urn:xmpp:jingle:transports:ice-udp:1"]').attr('ufrag')) + '\r\n';
+    tmp = content.find('>transport[xmlns="urn:xmpp:jingle:transports:ice-udp:1"]');
+    if (tmp.length) {
+        console.warn('tmp1');
+        if (tmp.attr('ufrag')) {
+            console.warn('tmp2');
+            media += SDPUtil.build_iceufrag(tmp.attr('ufrag')) + '\r\n';
         }
-        if (content.find('>transport[xmlns="urn:xmpp:jingle:transports:ice-udp:1"]').attr('pwd')) {
-            media += SDPUtil.build_icepwd(content.find('>transport[xmlns="urn:xmpp:jingle:transports:ice-udp:1"]').attr('pwd')) + '\r\n';
+        if (tmp.attr('pwd')) {
+            console.warn('tmp3');
+            media += SDPUtil.build_icepwd(tmp.attr('pwd')) + '\r\n';
         }
         content.find('>transport[xmlns="urn:xmpp:jingle:transports:ice-udp:1"]>fingerprint').each(function() {
             media += 'a=fingerprint:' + $(this).attr('hash');
