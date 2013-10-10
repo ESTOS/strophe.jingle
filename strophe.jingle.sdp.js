@@ -152,14 +152,14 @@ SDP.prototype.toJingle = function(elem, thecreator) {
 
         elem.c('transport', {xmlns: 'urn:xmpp:jingle:transports:ice-udp:1'});
         // XEP-0320
-        if (SDPUtil.find_line(this.media[i], 'a=fingerprint:', this.session)) {
-            tmp = SDPUtil.parse_fingerprint(SDPUtil.find_line(this.media[i], 'a=fingerprint:', this.session));
+        $.each(SDPUtil.find_lines(this.media[i], 'a=fingerprint:', this.session), function(idx, line) {
+            tmp = SDPUtil.parse_fingerprint(line);
             tmp.required = true;
             elem.c('fingerprint').t(tmp.fingerprint);
             delete tmp.fingerprint;
             elem.attrs(tmp);
             elem.up();
-        }
+        });
         tmp = SDPUtil.iceparams(this.media[i], this.session);
         if (tmp) {
             elem.attrs(tmp);
