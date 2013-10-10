@@ -296,7 +296,7 @@ SDP.prototype.jingle2media = function(content) {
         // estos hack to reject an m-line.
         tmp.port = '0'; 
     }
-    if (content.find('transport>fingerprint').length || desc.find('encryption').length) {
+    if (content.find('>transport>fingerprint').length || desc.find('encryption').length) {
         tmp.proto = 'RTP/SAVPF';
     } else {
         tmp.proto = 'RTP/AVPF';
@@ -374,7 +374,7 @@ SDP.prototype.jingle2media = function(content) {
         media += 'a=extmap:' + $(this).attr('id') + ' ' + $(this).attr('uri') + '\r\n';
     });
 
-    content.find('transport[xmlns="urn:xmpp:jingle:transports:ice-udp:1"]>candidate').each(function() {
+    content.find('>transport[xmlns="urn:xmpp:jingle:transports:ice-udp:1"]>candidate').each(function() {
         media += SDPUtil.candidateFromJingle(this);
     });
 
