@@ -311,12 +311,11 @@ SDP.prototype.jingle2media = function(content) {
         if (content.find('>transport[xmlns="urn:xmpp:jingle:transports:ice-udp:1"]').attr('pwd')) {
             media += 'a=ice-pwd:' + content.find('>transport[xmlns="urn:xmpp:jingle:transports:ice-udp:1"]').attr('pwd') + '\r\n';
         }
-        tmp = content.find('>transport[xmlns="urn:xmpp:jingle:transports:ice-udp:1"]>fingerprint');
-        if (tmp.length) {
-            media += 'a=fingerprint:' + tmp.attr('hash');
-            media += ' ' + tmp.text();
+        content.find('>transport[xmlns="urn:xmpp:jingle:transports:ice-udp:1"]>fingerprint').each(function() {
+            media += 'a=fingerprint:' + $(this).attr('hash');
+            media += ' ' + $(this).text();
             media += '\r\n';
-        }
+        });
     }
     switch (content.attr('senders')) {
     case 'initiator':
