@@ -374,7 +374,7 @@ SDP.prototype.jingle2media = function(content) {
         media += 'a=extmap:' + $(this).attr('id') + ' ' + $(this).attr('uri') + '\r\n';
     });
 
-    content.find('transport>candidate').each(function() {
+    content.find('transport[xmlns="urn:xmpp:jingle:transports:ice-udp:1"]>candidate').each(function() {
         media += SDPUtil.candidateFromJingle(this);
     });
 
