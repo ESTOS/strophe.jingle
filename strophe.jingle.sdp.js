@@ -286,7 +286,6 @@ SDP.prototype.jingle2media = function(content) {
     var media = '',
         desc = content.find('description'),
         ssrc = desc.attr('ssrc'),
-        mlineparts = { media: desc.attr('media')},
         self = this,
         tmp;
 
