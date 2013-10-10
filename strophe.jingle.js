@@ -83,7 +83,7 @@ Strophe.addConnectionPlugin('jingle', {
 
             sess.initiate($(iq).attr('from'), false);
             // FIXME: setRemoteDescription should only be done when this call is to be accepted
-            sess.setRemoteDescription($(iq).find('>jingle>content'), 'offer');
+            sess.setRemoteDescription($(iq).find('>jingle'), 'offer');
 
             this.sessions[sess.sid] = sess;
             this.jid2session[sess.peerjid] = sess;
@@ -94,7 +94,7 @@ Strophe.addConnectionPlugin('jingle', {
             $(document).trigger('callincoming.jingle', [sess.sid]);
             break;
         case 'session-accept':
-            sess.setRemoteDescription($(iq).find('>jingle>content'), 'answer');
+            sess.setRemoteDescription($(iq).find('>jingle'), 'answer');
             sess.accept();
             break;
         case 'session-terminate':
