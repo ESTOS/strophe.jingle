@@ -309,7 +309,7 @@ SDP.prototype.jingle2media = function(content) {
             media += SDPUtil.build_iceufrag(content.find('>transport[xmlns="urn:xmpp:jingle:transports:ice-udp:1"]').attr('ufrag')) + '\r\n';
         }
         if (content.find('>transport[xmlns="urn:xmpp:jingle:transports:ice-udp:1"]').attr('pwd')) {
-            media += 'a=ice-pwd:' + content.find('>transport[xmlns="urn:xmpp:jingle:transports:ice-udp:1"]').attr('pwd') + '\r\n';
+            media += SDPUtil.build_icepwd(content.find('>transport[xmlns="urn:xmpp:jingle:transports:ice-udp:1"]').attr('pwd')) + '\r\n';
         }
         content.find('>transport[xmlns="urn:xmpp:jingle:transports:ice-udp:1"]>fingerprint').each(function() {
             media += 'a=fingerprint:' + $(this).attr('hash');
@@ -407,6 +407,9 @@ SDPUtil = {
     },
     parse_icepwd: function(line) {
         return line.substring(10);
+    },
+    build_icepwd: function(pwd) {
+        return 'a=ice-pwd:' + pwd;
     },
     parse_mid: function(line) {
         return line.substring(6);
