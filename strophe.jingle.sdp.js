@@ -106,10 +106,7 @@ SDP.prototype.toJingle = function(elem, thecreator) {
             }
             if (SDPUtil.find_line(this.media[i], 'a=crypto:', this.session)) {
                 elem.c('encryption', {required: 1});
-                $.each(SDPUtil.find_lines(this.media[i], 'a=crypto:'), function(idx, line) {
-                    elem.c('crypto', SDPUtil.parse_crypto(line)).up();
-                });
-                $.each(SDPUtil.find_lines(this.session, 'a=crypto:'), function(idx, line) {
+                $.each(SDPUtil.find_lines(this.media[i], 'a=crypto:', this.session), function(idx, line) {
                     elem.c('crypto', SDPUtil.parse_crypto(line)).up();
                 });
                 elem.up(); // end of encryption
@@ -155,16 +152,7 @@ SDP.prototype.toJingle = function(elem, thecreator) {
 
         elem.c('transport', {xmlns: 'urn:xmpp:jingle:transports:ice-udp:1'});
         // XEP-0320
-        $.each(SDPUtil.find_lines(this.media[i], 'a=fingerprint:'), function(idx, line) {
-            tmp = SDPUtil.parse_fingerprint(line);
-            tmp.required = true;
-            elem.c('fingerprint').t(tmp.fingerprint);
-            delete tmp.fingerprint;
-            elem.attrs(tmp);
-            elem.up();
-        });
-        // for firefox
-        $.each(SDPUtil.find_lines(this.session, 'a=fingerprint:'), function(idx, line) {
+        $.each(SDPUtil.find_lines(this.media[i], 'a=fingerprint:', this.session), function(idx, line) {
             tmp = SDPUtil.parse_fingerprint(line);
             tmp.required = true;
             elem.c('fingerprint').t(tmp.fingerprint);
@@ -177,7 +165,7 @@ SDP.prototype.toJingle = function(elem, thecreator) {
             elem.attrs(tmp);
             // XEP-0176
             if (SDPUtil.find_line(this.media[i], 'a=candidate:', this.session)) { // add any a=candidate lines
-                lines = SDPUtil.find_lines(this.media[i], 'a=candidate:') || SDPUtil.find_lines(this.session, 'a=candidate:');
+                lines = SDPUtil.find_lines(this.media[i], 'a=candidate:', this.session);
                 for (j = 0; j < lines.length; j++) {
                     tmp = SDPUtil.candidateToJingle(lines[j]);
                     elem.c('candidate', tmp).up();
@@ -608,12 +596,22 @@ SDPUtil = {
         }
         return false;
     },
-    find_lines: function(haystack, needle) {
+    find_lines: function(haystack, needle, sessionpart) {
         var lines = haystack.split('\r\n'),
             needles = new Array();
         for (var i = 0; i < lines.length; i++) {
             if (lines[i].substring(0, needle.length) == needle)
                 needles.push(lines[i]);
+        }
+        if (needles.length || !sessionpart) {
+            return needles;
+        }
+        // search session part
+        lines = sessionpart.split('\r\n');
+        for (var i = 0; i < lines.length; i++) {
+            if (lines[i].substring(0, needle.length) == needle) {
+                needles.push(lines[i]);
+            }
         }
         return needles;
     },
