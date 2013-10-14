@@ -55,7 +55,7 @@ SDP.prototype.toJingle = function(elem, thecreator) {
         }
     }
     // old bundle plan, to be removed
-    var bundle;
+    var bundle = [];
     if (SDPUtil.find_line(this.session, 'a=group:BUNDLE')) {
         bundle = SDPUtil.find_line(this.session, 'a=group:BUNDLE ').split(' ');
         bundle.shift();
