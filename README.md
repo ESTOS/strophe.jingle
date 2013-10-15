@@ -8,9 +8,11 @@ This plugin makes it possible to negotiate audio/video streams via XMPP and then
 Features:
 - mostly standards-compliant jingle, mapping from WebRTCs SDP to Jingle and vice versa. Aiming for full compliance with XEPs 0166, 0167, 0293, 0294 and 0320.
 - tested with chrome and firefox.
+- interoperable with [stanza.io](https://github.com/legastero/stanza.io).
 - trickle and non-trickle modes for ICE (XEP-0176). Even supports early candidates from peer using PRANSWER.
 - support for fetching time-limited STUN/TURN credentials through XEP-0215. [rfc5766-turn-server](https://code.google.com/p/rfc5766-turn-server/) is a TURN server which implements this method.
-- a sample demonstrating the use of this to build a federated multi-user conference (in full-mesh mode). When [hark](https://github.com/latentflip/hark) is available, the local audio volume is visualized (in Chrome M29+).
+- comes with a sample demonstrating the use of this to build a federated multi-user conference (in full-mesh mode). When [hark](https://github.com/latentflip/hark) is available, the local audio volume is visualized (in Chrome M29+).
+- the [jingle-interop-demos repository](https://github.com/legastero/jingle-interop-demos/tree/gh-pages/strophejingle) also contains a sample of 1-1 chat.
 
 Events:
 - callincoming.jingle (sid) -- you should accept the session here
