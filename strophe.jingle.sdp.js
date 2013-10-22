@@ -114,7 +114,26 @@ SDP.prototype.toJingle = function(elem, thecreator) {
             }
 
             if (ssrc) {
+                // new style mapping
+                elem.c('source', { ssrc: ssrc, xmlns: 'urn:xmpp:jingle:apps:rtp:ssma:0' });
+                // FIXME: group by ssrc and support multiple different ssrcs
+                $.each(SDPUtil.find_lines(this.media[i], 'a=ssrc:'), function(idx, line) {
+                    var idx = line.indexOf(' ');
+                    var kv = line.substr(idx+1);
+                    elem.c('parameter');
+                    if (kv.indexOf(':') == -1) {
+                        elem.attrs({ name: kv });
+                    } else {
+                        elem.attrs({ name: kv.split(':', 2)[0] });
+                        elem.attrs({ value: kv.split(':', 2)[1] });
+                    }
+                    elem.up();
+                });
+                elem.up();
+
+                // old proprietary mapping, to be removed at some point
                 tmp = SDPUtil.parse_ssrc(this.media[i]);
+                tmp.xmlns = 'http://estos.de/ns/ssrc';
                 tmp.ssrc = ssrc;
                 elem.c('ssrc', tmp).up(); // ssrc is part of description
             }
@@ -389,13 +408,26 @@ SDP.prototype.jingle2media = function(content) {
         media += SDPUtil.candidateFromJingle(this);
     });
 
-    // proprietary mapping of a=ssrc lines
-    tmp = content.find('description>ssrc[xmlns="http://estos.de/ns/ssrc"]');
-    if (tmp.length) {
-        media += 'a=ssrc:' + ssrc + ' cname:' + tmp.attr('cname') + '\r\n';
-        media += 'a=ssrc:' + ssrc + ' msid:' + tmp.attr('msid') + '\r\n';
-        media += 'a=ssrc:' + ssrc + ' mslabel:' + tmp.attr('mslabel') + '\r\n';
-        media += 'a=ssrc:' + ssrc + ' label:' + tmp.attr('label') + '\r\n';
+    tmp = content.find('description>source[xmlns="urn:xmpp:jingle:apps:rtp:ssma:0"]');
+    tmp.each(function() {
+        var ssrc = $(this).attr('ssrc');
+        $(this).find('>parameter').each(function() {
+            media += 'a=ssrc:' + ssrc + ' ' + $(this).attr('name');
+            if ($(this).attr('value') && $(this).attr('value').length)
+                media += ':' + $(this).attr('value');
+            media += '\r\n';
+        });
+    });
+
+    if (tmp.length == 0) {
+        // fallback to proprietary mapping of a=ssrc lines
+        tmp = content.find('description>ssrc[xmlns="http://estos.de/ns/ssrc"]');
+        if (tmp.length) {
+            media += 'a=ssrc:' + ssrc + ' cname:' + tmp.attr('cname') + '\r\n';
+            media += 'a=ssrc:' + ssrc + ' msid:' + tmp.attr('msid') + '\r\n';
+            media += 'a=ssrc:' + ssrc + ' mslabel:' + tmp.attr('mslabel') + '\r\n';
+            media += 'a=ssrc:' + ssrc + ' label:' + tmp.attr('label') + '\r\n';
+        }
     }
     return media;
 };
@@ -558,7 +590,7 @@ SDPUtil = {
         // TODO: see "Jingle RTP Source Description" by Juberti and P. Thatcher on google docs
         // and parse according to that
         var lines = desc.split('\r\n'),
-            data = {xmlns: 'http://estos.de/ns/ssrc'};
+            data = {};
         for (var i = 0; i < lines.length; i++) {
             if (lines[i].substring(0, 7) == 'a=ssrc:') {
                 var idx = lines[i].indexOf(' ');
