@@ -64,7 +64,7 @@ Strophe.addConnectionPlugin('jingle', {
                 this.connection.send(ack);
                 return true;
             }
-        } else if (sess !== null) {
+        } else if (sess !== undefined) {
             // existing session with same session id
             // this might be out-of-order if the sess.peerjid is the same as from
             ack.type = 'error';
