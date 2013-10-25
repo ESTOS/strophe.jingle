@@ -1,7 +1,8 @@
+/* jshint -W117 */
 var BOSH_SERVICE = '/http-bind',
-    DOMAIN = window.location.hostname;
+    DOMAIN = window.location.hostname,
     CONFERENCEDOMAIN = 'conference.' + DOMAIN,
-    ice_config = {iceServers: [{url: 'stun:stun.l.google.com:19302'}]}, 
+    ice_config = {iceServers: [{url: 'stun:stun.l.google.com:19302'}]},
     RTC = null,
     RTCPeerConnection = null,
     AUTOACCEPT = true,
@@ -45,64 +46,37 @@ function onConnect(status) {
     }
 }
 
-function onConnected(event) {
-    doJoin();
-    setTimeout(function() {
-           $(window).bind('hashchange', onHashChange);
-    }, 500);
-}
-
-function doJoin() {
-    var roomnode = null, 
-        pres;
-    if (location.hash.length > 1) {
-        roomnode = location.hash.substr(1).toLowerCase();
-        if (roomnode.indexOf('/') != -1) {
-            setStatus('invalid location, must not contain "/"');
-            connection.disconnect();
-            return;
-        }
-        if (roomnode.indexOf('@') != -1) { // allow #room@host
-            roomjid = roomnode;
-        }
-    } else {
-        roomnode = Math.random().toString(36).substr(2, 8);
-        location.hash = roomnode;
-    }
-    if (roomjid == null) {
-        roomjid = roomnode + '@' + CONFERENCEDOMAIN;
-    }
-    setStatus('Joining ' + location.hash);
-    myroomjid = roomjid + '/' + Strophe.getNodeFromJid(connection.jid);
-    list_members = new Array();
-    console.log('joining', roomjid);
-
-    // muc stuff
-    connection.addHandler(onPresence, null, 'presence', null, null, roomjid, {matchBare: true});
-    connection.addHandler(onPresenceUnavailable, null, 'presence', 'unavailable', null, roomjid, {matchBare: true});
-    connection.addHandler(onPresenceError, null, 'presence', 'error', null, roomjid, {matchBare: true});
-
-    pres = $pres({to: myroomjid })
-            .c('x', {xmlns: 'http://jabber.org/protocol/muc'});
-    connection.send(pres);
-}
-
 function onHashChange() {
     setStatus('hashChange: ' + window.location.hash);
-    if (Object.keys(connection.jingle.sessions).length == 0) {
+    if (Object.keys(connection.jingle.sessions).length === 0) {
         window.location.reload();
+    }
+}
+
+function onJoinComplete() {
+    setStatus('onJoinComplete');
+    if (list_members.length < 1) {
+        setStatus('waiting for peer');
+        return;
+    }
+
+    setStatus('initiating call');
+    var i, sess, num;
+    num = MULTIPARTY ? list_members.length : 1;
+    for (i = 0; i < num; i++) {
+        connection.jingle.initiate(list_members[i], myroomjid);
     }
 }
 
 function onPresence(pres) {
     var from = pres.getAttribute('from'),
         type = pres.getAttribute('type');
-    if (type != null) {
+    if (type !== null) {
         return true;
     }
     if ($(pres).find('>x[xmlns="http://jabber.org/protocol/muc#user"]>status[code="201"]').length) {
         // http://xmpp.org/extensions/xep-0045.html#createroom-instant
-        var create = $iq({type: 'set', to:roomjid})
+        var create = $iq({type: 'set', to: roomjid})
                 .c('query', {xmlns: 'http://jabber.org/protocol/muc#owner'})
                 .c('x', {xmlns: 'jabber:x:data', type: 'submit'});
         connection.send(create); // fire away
@@ -117,7 +91,7 @@ function onPresence(pres) {
 
 function onPresenceUnavailable(pres) {
     connection.jingle.terminateByJid($(pres).attr('from'));
-    if (Object.keys(connection.jingle.sessions).length == 0) {
+    if (Object.keys(connection.jingle.sessions).length === 0) {
         setStatus('everyone left');
     }
     for (var i = 0; i < list_members.length; i++) {
@@ -134,19 +108,39 @@ function onPresenceError(pres) {
     return true;
 }
 
-function onJoinComplete() {
-    setStatus('onJoinComplete');
-    if (list_members.length < 1) {
-        setStatus('waiting for peer');
-        return;
+function doJoin() {
+    var roomnode = null,
+        pres;
+    if (location.hash.length > 1) {
+        roomnode = location.hash.substr(1).toLowerCase();
+        if (roomnode.indexOf('/') != -1) {
+            setStatus('invalid location, must not contain "/"');
+            connection.disconnect();
+            return;
+        }
+        if (roomnode.indexOf('@') != -1) { // allow #room@host
+            roomjid = roomnode;
+        }
+    } else {
+        roomnode = Math.random().toString(36).substr(2, 8);
+        location.hash = roomnode;
     }
+    if (roomjid === null) {
+        roomjid = roomnode + '@' + CONFERENCEDOMAIN;
+    }
+    setStatus('Joining ' + location.hash);
+    myroomjid = roomjid + '/' + Strophe.getNodeFromJid(connection.jid);
+    list_members = [];
+    console.log('joining', roomjid);
 
-    setStatus('initiating call');
-    var i, sess, num;
-    num = MULTIPARTY ? list_members.length : 1;
-    for (i = 0; i < num; i++) {
-        connection.jingle.initiate(list_members[i], myroomjid);
-    }
+    // muc stuff
+    connection.addHandler(onPresence, null, 'presence', null, null, roomjid, {matchBare: true});
+    connection.addHandler(onPresenceUnavailable, null, 'presence', 'unavailable', null, roomjid, {matchBare: true});
+    connection.addHandler(onPresenceError, null, 'presence', 'error', null, roomjid, {matchBare: true});
+
+    pres = $pres({to: myroomjid })
+            .c('x', {xmlns: 'http://jabber.org/protocol/muc'});
+    connection.send(pres);
 }
 
 function onMediaReady(event, stream) {
@@ -167,25 +161,25 @@ function onMediaReady(event, stream) {
     doConnect();
 
     if (typeof hark === "function") {
-        var options = { interval:400 };
+        var options = { interval: 400 };
         var speechEvents = hark(stream, options);
 
-        speechEvents.on('speaking', function() {
-          console.log('speaking');
+        speechEvents.on('speaking', function () {
+            console.log('speaking');
         });
 
-        speechEvents.on('stopped_speaking', function() {
-          console.log('stopped_speaking');
+        speechEvents.on('stopped_speaking', function () {
+            console.log('stopped_speaking');
         });
-        speechEvents.on('volume_change', function(volume, treshold) {
+        speechEvents.on('volume_change', function (volume, treshold) {
           //console.log('volume', volume, treshold);
-          if (volume < -60) { // vary between -60 and -35
-              $('#ownvolume').css('width', 0);
-          } else if (volume > -35) {
-              $('#ownvolume').css('width', '100%');
-          } else {
-              $('#ownvolume').css('width', (volume+100)*100/25-160+ '%');
-          }
+            if (volume < -60) { // vary between -60 and -35
+                $('#ownvolume').css('width', 0);
+            } else if (volume > -35) {
+                $('#ownvolume').css('width', '100%');
+            } else {
+                $('#ownvolume').css('width', (volume + 100) * 100 / 25 - 160 + '%');
+            }
         });
     } else {
         console.warn('without hark, you are missing quite a nice feature');
@@ -207,87 +201,20 @@ function onCallIncoming(event, sid) {
     //connection.jingle.terminate(sid);
 }
 
-function onCallActive(event, videoelem, sid) {
-    setStatus('call active ' + sid);
-    $(videoelem).appendTo('#largevideocontainer');
-    arrangeVideos('#largevideocontainer >');
-    connection.jingle.sessions[sid].getStats(1000);
-}
-
-function onCallTerminated(event, sid, reason) {
-    setStatus('call terminated ' + sid + (reason ? (': ' + reason) : ''));
-    if (Object.keys(connection.jingle.sessions).length == 0) {
-        setStatus('all calls terminated');
-    }
-    $('#largevideocontainer #largevideo_' + sid).remove();
-    arrangeVideos('#largevideocontainer >');
-}
-
-function onRemoteStreamAdded(event, data, sid) {
-    setStatus('Remote stream for session ' + sid + ' added.');
-    if ($('#largevideo_' + sid).length != 0) {
-        console.log('ignoring duplicate onRemoteStreamAdded...'); // FF 20
-        return;
-    }
-    // after remote stream has been added, wait for ice to become connected
-    // old code for compat with FF22 beta
-    var el = $("<video autoplay='autoplay' style='display:none'/>").attr('id', 'largevideo_' + sid);
-    RTC.attachMediaStream(el, data.stream);
-    waitForRemoteVideo(el, sid);
-    /* does not yet work for remote streams -- https://code.google.com/p/webrtc/issues/detail?id=861
-    var options = { interval:500 };
-    var speechEvents = hark(data.stream, options);
-
-    speechEvents.on('volume_change', function(volume, treshold) {
-      console.log('volume for ' + sid, volume, treshold);
-    });
-    */
-}
-
-function waitForRemoteVideo(selector, sid) {
-    sess = connection.jingle.sessions[sid];
-    videoTracks = sess.remoteStream.getVideoTracks();
-    if (videoTracks.length === 0 || selector[0].currentTime > 0) {
-        $(document).trigger('callactive.jingle', [selector, sid]);
-        RTC.attachMediaStream(selector, sess.remoteStream); // FIXME: why do i have to do this for FF?
-        console.log('waitForremotevideo', sess.peerconnection.iceConnectionState, sess.peerconnection.signalingState);
-    } else {
-        setTimeout(function() { waitForRemoteVideo(selector, sid); }, 100);
-    }
-}
-
-
-function onRemoteStreamRemoved(event, data, sid) {
-    setStatus('Remote stream for session ' + sid + ' removed.');
-}
-
-function onIceConnectionStateChanged(event, sid, sess) {
-    console.log('ice state for', sid, sess.peerconnection.iceConnectionState);
-    console.log('sig state for', sid, sess.peerconnection.signalingState);
-    // works like charm, unfortunately only in chrome and FF nightly, not FF22 beta
-    /*
-    if (sess.peerconnection.signalingState == 'stable' && sess.peerconnection.iceConnectionState == 'connected') {
-        var el = $("<video autoplay='autoplay' style='display:none'/>").attr('id', 'largevideo_' + sid);
-        $(document).trigger('callactive.jingle', [el, sid]);
-        RTC.attachMediaStream(el, sess.remoteStream); // moving this before the trigger doesn't work in FF?!
-    }
-    */
-}
-
 function arrangeVideos(selector) {
     var floor = Math.floor,
         elements = $(selector),
         howMany = elements.length,
         availableWidth = $(selector).parent().innerWidth(),
         availableHeight = $(selector).parent().innerHeight(),
-        usedWidth = 0;
+        usedWidth = 0,
         aspectRatio = 4 / 3;
     if (availableHeight < availableWidth / aspectRatio) {
         availableWidth = availableHeight * aspectRatio;
     }
     elements.height(availableHeight);
 
-    elements.each(function(index) {
+    elements.each(function (index) {
         $(elements[index]).removeAttr('style');
     });
 
@@ -321,7 +248,7 @@ function arrangeVideos(selector) {
         $(elements[3]).css('right', ($(selector).parent().innerWidth() - availableWidth) / 2);
         break;
     }
-    elements.each(function(index) {
+    elements.each(function (index) {
         $(elements[index]).css({
             position: 'absolute',
             width: usedWidth,
@@ -331,38 +258,112 @@ function arrangeVideos(selector) {
     });
 }
 
+
+function onCallActive(event, videoelem, sid) {
+    setStatus('call active ' + sid);
+    $(videoelem).appendTo('#largevideocontainer');
+    arrangeVideos('#largevideocontainer >');
+    connection.jingle.sessions[sid].getStats(1000);
+}
+
+function onCallTerminated(event, sid, reason) {
+    setStatus('call terminated ' + sid + (reason ? (': ' + reason) : ''));
+    if (Object.keys(connection.jingle.sessions).length === 0) {
+        setStatus('all calls terminated');
+    }
+    $('#largevideocontainer #largevideo_' + sid).remove();
+    arrangeVideos('#largevideocontainer >');
+}
+
+function waitForRemoteVideo(selector, sid) {
+    sess = connection.jingle.sessions[sid];
+    videoTracks = sess.remoteStream.getVideoTracks();
+    if (videoTracks.length === 0 || selector[0].currentTime > 0) {
+        $(document).trigger('callactive.jingle', [selector, sid]);
+        RTC.attachMediaStream(selector, sess.remoteStream); // FIXME: why do i have to do this for FF?
+        console.log('waitForremotevideo', sess.peerconnection.iceConnectionState, sess.peerconnection.signalingState);
+    } else {
+        setTimeout(function () { waitForRemoteVideo(selector, sid); }, 100);
+    }
+}
+
+function onRemoteStreamAdded(event, data, sid) {
+    setStatus('Remote stream for session ' + sid + ' added.');
+    if ($('#largevideo_' + sid).length !== 0) {
+        console.log('ignoring duplicate onRemoteStreamAdded...'); // FF 20
+        return;
+    }
+    // after remote stream has been added, wait for ice to become connected
+    // old code for compat with FF22 beta
+    var el = $("<video autoplay='autoplay' style='display:none'/>").attr('id', 'largevideo_' + sid);
+    RTC.attachMediaStream(el, data.stream);
+    waitForRemoteVideo(el, sid);
+    /* does not yet work for remote streams -- https://code.google.com/p/webrtc/issues/detail?id=861
+    var options = { interval:500 };
+    var speechEvents = hark(data.stream, options);
+
+    speechEvents.on('volume_change', function (volume, treshold) {
+      console.log('volume for ' + sid, volume, treshold);
+    });
+    */
+}
+
+function onRemoteStreamRemoved(event, data, sid) {
+    setStatus('Remote stream for session ' + sid + ' removed.');
+}
+
+function onIceConnectionStateChanged(event, sid, sess) {
+    console.log('ice state for', sid, sess.peerconnection.iceConnectionState);
+    console.log('sig state for', sid, sess.peerconnection.signalingState);
+    // works like charm, unfortunately only in chrome and FF nightly, not FF22 beta
+    /*
+    if (sess.peerconnection.signalingState == 'stable' && sess.peerconnection.iceConnectionState == 'connected') {
+        var el = $("<video autoplay='autoplay' style='display:none'/>").attr('id', 'largevideo_' + sid);
+        $(document).trigger('callactive.jingle', [el, sid]);
+        RTC.attachMediaStream(el, sess.remoteStream); // moving this before the trigger doesn't work in FF?!
+    }
+    */
+}
+
 function noStunCandidates(event) {
     setStatus('webrtc did not encounter stun candidates, NAT traversal will not work');
     console.warn('webrtc did not encounter stun candidates, NAT traversal will not work');
 }
 
-$(window).bind('beforeunload', function() {
+function onConnected(event) {
+    doJoin();
+    setTimeout(function () {
+        $(window).bind('hashchange', onHashChange);
+    }, 500);
+}
+
+$(window).bind('beforeunload', function () {
     if (connection && connection.connected) {
         // ensure signout
         $.ajax({
-                type: 'POST',
-                url: '/http-bind',
-                async: false,
-                cache: false,
-                contentType: 'application/xml',
-                data: "<body rid='" + connection.rid + "' xmlns='http://jabber.org/protocol/httpbind' sid='" + connection.sid + "' type='terminate'><presence xmlns='jabber:client' type='unavailable'/></body>",
-                success: function(data) {
+            type: 'POST',
+            url: '/http-bind',
+            async: false,
+            cache: false,
+            contentType: 'application/xml',
+            data: "<body rid='" + connection.rid + "' xmlns='http://jabber.org/protocol/httpbind' sid='" + connection.sid + "' type='terminate'><presence xmlns='jabber:client' type='unavailable'/></body>",
+            success: function (data) {
                 console.log('signed out');
                 console.log(data);
             },
-            error: function(XMLHttpRequest, textStatus, errorThrown) {
+            error: function (XMLHttpRequest, textStatus, errorThrown) {
                 console.log('signout error', textStatus + ' (' + errorThrown + ')');
             }
         });
     }
 });
 
-$(document).ready(function() {
+$(document).ready(function () {
     RTC = setupRTC();
     connection = new Strophe.Connection(BOSH_SERVICE);
     if (RAWLOGGING) {
-        connection.rawInput = function(data) { console.log('RECV: ' + data); };
-        connection.rawOutput = function(data) { console.log('SEND: ' + data); };
+        connection.rawInput = function (data) { console.log('RECV: ' + data); };
+        connection.rawOutput = function (data) { console.log('SEND: ' + data); };
     }
     connection.jingle.ice_config = ice_config;
     if (RTC) {
@@ -380,19 +381,19 @@ $(document).ready(function() {
     $(document).bind('remotestreamremoved.jingle', onRemoteStreamRemoved);
     $(document).bind('iceconnectionstatechange.jingle', onIceConnectionStateChanged);
     $(document).bind('nostuncandidates.jingle', noStunCandidates);
-    $(document).bind('ack.jingle', function(event, sid, ack) {
+    $(document).bind('ack.jingle', function (event, sid, ack) {
         console.log('got stanza ack for ' + sid, ack);
     });
-    $(document).bind('error.jingle', function(event, sid, err) {
+    $(document).bind('error.jingle', function (event, sid, err) {
         console.log('got stanza error for ' + sid, err);
     });
-    $(document).bind('packetloss.jingle', function(event, sid, loss) {
+    $(document).bind('packetloss.jingle', function (event, sid, loss) {
         console.warn('packetloss', sid, loss);
     });
-    if (RTC != null) {
+    if (RTC !== null) {
         RTCPeerconnection = RTC.peerconnection;
         if (RTC.browser == 'firefox') {
-            connection.jingle.media_constraints.mandatory['MozDontOfferDataChannel'] = true;
+            connection.jingle.media_constraints.mandatory.MozDontOfferDataChannel = true;
         }
         //setStatus('please allow access to microphone and camera');
         //getUserMediaWithConstraints();

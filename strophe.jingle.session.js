@@ -1,3 +1,4 @@
+/* jshint -W117 */
 // Jingle stuff
 function JingleSession(me, sid, connection) {
     this.me = me;
@@ -33,9 +34,9 @@ function JingleSession(me, sid, connection) {
     this.reason = null;
 }
 
-JingleSession.prototype.initiate = function(peerjid, isInitiator) {
+JingleSession.prototype.initiate = function (peerjid, isInitiator) {
     var obj = this;
-    if (this.state != null) {
+    if (this.state !== null) {
         console.error('attempt to initiate on session ' + this.sid +
                   'in state ' + this.state);
         return;
@@ -59,22 +60,22 @@ JingleSession.prototype.initiate = function(peerjid, isInitiator) {
     this.hadstuncandidate = false;
     this.hadturncandidate = false;
     this.lasticecandidate = false;
-    this.peerconnection.onicecandidate = function(event) {
+    this.peerconnection.onicecandidate = function (event) {
         obj.sendIceCandidate(event.candidate);
     };
-    this.peerconnection.onaddstream = function(event) {
+    this.peerconnection.onaddstream = function (event) {
         obj.remoteStream = event.stream;
         $(document).trigger('remotestreamadded.jingle', [event, obj.sid]);
     };
-    this.peerconnection.onremovestream = function(event) {
+    this.peerconnection.onremovestream = function (event) {
         obj.remoteStream = null;
         $(document).trigger('remotestreamremoved.jingle', [event, obj.sid]);
     };
-    this.peerconnection.onsignalingstatechange = function(event) {
+    this.peerconnection.onsignalingstatechange = function (event) {
         if (!(obj && obj.peerconnection)) return;
         console.log('signallingstate ', obj.peerconnection.signalingState, event);
     };
-    this.peerconnection.oniceconnectionstatechange = function(event) {
+    this.peerconnection.oniceconnectionstatechange = function (event) {
         if (!(obj && obj.peerconnection)) return;
         console.log('iceconnectionstatechange', obj.peerconnection.iceConnectionState, event);
         switch (obj.peerconnection.iceConnectionState) {
@@ -87,14 +88,14 @@ JingleSession.prototype.initiate = function(peerjid, isInitiator) {
         }
         $(document).trigger('iceconnectionstatechange.jingle', [obj.sid, obj]);
     };
-    if (this.localStream != null) {
+    if (this.localStream !== null) {
         this.peerconnection.addStream(this.localStream);
     } else {
         console.warn('attempting to initate a jingle session without a local stream');
     }
 };
 
-JingleSession.prototype.accept = function() {
+JingleSession.prototype.accept = function () {
     var ob = this;
     this.state = 'active';
 
@@ -124,19 +125,19 @@ JingleSession.prototype.accept = function() {
            sid: this.sid });
     prsdp.toJingle(accept, this.initiator == this.me ? 'initiator' : 'responder');
     this.connection.sendIQ(accept,
-        function() { 
+        function () {
             var ack = {};
             ack.source = 'answer';
             $(document).trigger('ack.jingle', [ob.sid, ack]);
-        }, 
-        function(stanza) { 
+        },
+        function (stanza) {
             var error = ($(stanza).find('error').length) ? {
                 code: $(stanza).find('error').attr('code'),
                 reason: $(stanza).find('error :first')[0].tagName,
             }:{};
             error.source = 'answer';
             $(document).trigger('error.jingle', [ob.sid, error]);
-        }, 
+        },
     10000);
 
     var sdp = this.peerconnection.localDescription.sdp;
@@ -144,30 +145,32 @@ JingleSession.prototype.accept = function() {
         // FIXME: change any inactive to sendrecv or whatever they were originally
         sdp = sdp.replace('a=inactive', 'a=sendrecv');
     }
-    this.peerconnection.setLocalDescription(new RTCSessionDescription({type: 'answer', sdp: sdp}), 
-        function() {
+    this.peerconnection.setLocalDescription(new RTCSessionDescription({type: 'answer', sdp: sdp}),
+        function () {
             console.log('setLocalDescription success');
-        }, function(e) {
+        },
+        function (e) {
             console.error('setLocalDescription failed', e);
-    });
+        }
+    );
 };
 
-JingleSession.prototype.terminate = function(reason) {
+JingleSession.prototype.terminate = function (reason) {
     this.state = 'ended';
     this.reason = reason;
     this.peerconnection.close();
-    if (this.statsinterval != null) {
+    if (this.statsinterval !== null) {
         window.clearInterval(this.statsinterval);
         this.statsinterval = null;
     }
 };
 
-JingleSession.prototype.active = function() {
+JingleSession.prototype.active = function () {
     return this.state == 'active';
 };
 
-JingleSession.prototype.sendIceCandidate = function(candidate) {
-    var ob = this; 
+JingleSession.prototype.sendIceCandidate = function (candidate) {
+    var ob = this;
     if (candidate && !this.lasticecandidate) {
         var ice = SDPUtil.iceparams(this.localSDP.media[candidate.sdpMLineIndex], this.localSDP.session),
             jcand = SDPUtil.candidateToJingle(candidate.candidate);
@@ -186,10 +189,10 @@ JingleSession.prototype.sendIceCandidate = function(candidate) {
 
         if (this.usetrickle) {
             if (this.usedrip) {
-                if (this.drip_container.length == 0) {
+                if (this.drip_container.length === 0) {
                     // start 10ms callout
-                    window.setTimeout(function() {
-                        if (ob.drip_container.length == 0) return;
+                    window.setTimeout(function () {
+                        if (ob.drip_container.length === 0) return;
                         var allcands = ob.drip_container;
                         ob.drip_container = [];
                         var cand = $iq({to: ob.peerjid, type: 'set'})
@@ -198,7 +201,7 @@ JingleSession.prototype.sendIceCandidate = function(candidate) {
                                initiator: ob.initiator,
                                sid: ob.sid});
                         for (var mid = 0; mid < ob.localSDP.media.length; mid++) {
-                            var cands = allcands.filter(function(el) { return el.sdpMLineIndex == mid; });
+                            var cands = allcands.filter(function (el) { return el.sdpMLineIndex == mid; });
                             if (cands.length > 0) {
                                 var ice = SDPUtil.iceparams(ob.localSDP.media[mid], ob.localSDP.session);
                                 ice.xmlns = 'urn:xmpp:jingle:transports:ice-udp:1';
@@ -224,12 +227,12 @@ JingleSession.prototype.sendIceCandidate = function(candidate) {
                         // might merge last-candidate notification into this, but it is called alot later. See webrtc issue #2340
                         //console.log('was this the last candidate', ob.lasticecandidate);
                         ob.connection.sendIQ(cand,
-                            function() { 
+                            function () {
                                 var ack = {};
                                 ack.source = 'transportinfo';
                                 $(document).trigger('ack.jingle', [ob.sid, ack]);
                             },
-                            function(stanza) { 
+                            function (stanza) {
                                 var error = ($(stanza).find('error').length) ? {
                                     code: $(stanza).find('error').attr('code'),
                                     reason: $(stanza).find('error :first')[0].tagName,
@@ -265,13 +268,13 @@ JingleSession.prototype.sendIceCandidate = function(candidate) {
                 cand.up();
             }
             this.connection.sendIQ(cand,
-               function() { 
-                   var ack = {};
-                   ack.source = 'transportinfo';
-                   $(document).trigger('ack.jingle', [ob.sid, ack]);
-               },
-               function(stanza) { 
-                    console.error('transport info error'); 
+                function () {
+                    var ack = {};
+                    ack.source = 'transportinfo';
+                    $(document).trigger('ack.jingle', [ob.sid, ack]);
+                },
+                function (stanza) {
+                    console.error('transport info error');
                     var error = ($(stanza).find('error').length) ? {
                         code: $(stanza).find('error').attr('code'),
                         reason: $(stanza).find('error :first')[0].tagName,
@@ -294,13 +297,13 @@ JingleSession.prototype.sendIceCandidate = function(candidate) {
             this.localSDP = new SDP(this.peerconnection.localDescription.sdp);
             this.localSDP.toJingle(init, this.initiator == this.me ? 'initiator' : 'responder');
             this.connection.sendIQ(init,
-                function() {
+                function () {
                     console.log('session initiate ack');
-                   var ack = {};
-                   ack.source = 'offer';
-                   $(document).trigger('ack.jingle', [ob.sid, ack]);
+                    var ack = {};
+                    ack.source = 'offer';
+                    $(document).trigger('ack.jingle', [ob.sid, ack]);
                 },
-                function(stanza) {
+                function (stanza) {
                     ob.state = 'error';
                     ob.peerconnection.close();
                     var error = ($(stanza).find('error').length) ? {
@@ -322,20 +325,20 @@ JingleSession.prototype.sendIceCandidate = function(candidate) {
     }
 };
 
-JingleSession.prototype.sendOffer = function() {
+JingleSession.prototype.sendOffer = function () {
     console.log('sendOffer...');
     var ob = this;
-    this.peerconnection.createOffer(function(sdp) {
+    this.peerconnection.createOffer(function (sdp) {
             ob.createdOffer(sdp);
         },
-        function(e) {
+        function (e) {
             console.error('createOffer failed', e);
         },
         this.media_constraints
     );
 };
 
-JingleSession.prototype.createdOffer = function(sdp) {
+JingleSession.prototype.createdOffer = function (sdp) {
     console.log('createdOffer', sdp);
     var ob = this;
     this.localSDP = new SDP(sdp.sdp);
@@ -349,12 +352,12 @@ JingleSession.prototype.createdOffer = function(sdp) {
                sid: this.sid});
         this.localSDP.toJingle(init, this.initiator == this.me ? 'initiator' : 'responder');
         this.connection.sendIQ(init,
-            function() {
+            function () {
                 var ack = {};
                 ack.source = 'offer';
                 $(document).trigger('ack.jingle', [ob.sid, ack]);
             },
-            function(stanza) {
+            function (stanza) {
                 ob.state = 'error';
                 ob.peerconnection.close();
                 var error = ($(stanza).find('error').length) ? {
@@ -367,11 +370,13 @@ JingleSession.prototype.createdOffer = function(sdp) {
         10000);
     }
     sdp.sdp = this.localSDP.raw;
-    this.peerconnection.setLocalDescription(sdp, function() {
+    this.peerconnection.setLocalDescription(sdp, function () {
             console.log('setLocalDescription success');
-        }, function(e) {
+        },
+        function (e) {
             console.error('setLocalDescription failed', e);
-    });
+        }
+    );
     var cands = SDPUtil.find_lines(this.localSDP.raw, 'a=candidate:');
     for (var i = 0; i < cands.length; i++) {
         var cand = SDPUtil.parse_icecandidate(cands[i]);
@@ -383,11 +388,11 @@ JingleSession.prototype.createdOffer = function(sdp) {
     }
 };
 
-JingleSession.prototype.setRemoteDescription = function(elem, desctype) {
+JingleSession.prototype.setRemoteDescription = function (elem, desctype) {
     console.log('setting remote description... ', desctype);
     this.remoteSDP = new SDP('');
     this.remoteSDP.fromJingle(elem);
-    if (this.peerconnection.remoteDescription != null) {
+    if (this.peerconnection.remoteDescription !== null) {
         console.log('setRemoteDescription when remote description is not null, should be pranswer', this.peerconnection.remoteDescription);
         if (this.peerconnection.remoteDescription.type == 'pranswer') {
             var pranswer = new SDP(this.peerconnection.remoteDescription.sdp);
@@ -416,14 +421,17 @@ JingleSession.prototype.setRemoteDescription = function(elem, desctype) {
     }
     var remotedesc = new RTCSessionDescription({type: desctype, sdp: this.remoteSDP.raw});
     
-    this.peerconnection.setRemoteDescription(remotedesc, function() {
-        console.log('setRemoteDescription success');
-    }, function(e){
-        console.error('setRemoteDescription error', e);
-    });
+    this.peerconnection.setRemoteDescription(remotedesc,
+        function () {
+            console.log('setRemoteDescription success');
+        },
+        function (e) {
+            console.error('setRemoteDescription error', e);
+        }
+    );
 };
 
-JingleSession.prototype.addIceCandidate = function(elem) {
+JingleSession.prototype.addIceCandidate = function (elem) {
     var obj = this;
     if (this.peerconnection.signalingState == 'closed') {
         return;
@@ -448,10 +456,10 @@ JingleSession.prototype.addIceCandidate = function(elem) {
             this.remoteSDP = new SDP(cobbled);
         }
         // then add things like ice and dtls from remote candidate
-        elem.each(function() {
+        elem.each(function () {
             for (var i = 0; i < obj.remoteSDP.media.length; i++) {
                 if (SDPUtil.find_line(obj.remoteSDP.media[i], 'a=mid:' + $(this).attr('name')) ||
-                        obj.remoteSDP.media[i].indexOf('m=' + $(this).attr('name')) == 0) {
+                        obj.remoteSDP.media[i].indexOf('m=' + $(this).attr('name')) === 0) {
                     if (!SDPUtil.find_line(obj.remoteSDP.media[i], 'a=ice-ufrag:')) {
                         var tmp = $(this).find('transport');
                         obj.remoteSDP.media[i] += 'a=ice-ufrag:' + tmp.attr('ufrag') + '\r\n';
@@ -473,7 +481,7 @@ JingleSession.prototype.addIceCandidate = function(elem) {
         // we need a complete SDP with ice-ufrag/ice-pwd in all parts
         // this makes the assumption that the PRANSWER is constructed such that the ice-ufrag is in all mediaparts
         // but it could be in the session part as well. since the code above constructs this sdp this can't happen however
-        var iscomplete = this.remoteSDP.media.filter(function(mediapart) {
+        var iscomplete = this.remoteSDP.media.filter(function (mediapart) {
             return SDPUtil.find_line(mediapart, 'a=ice-ufrag:');
         }).length == this.remoteSDP.media.length;
 
@@ -489,13 +497,13 @@ JingleSession.prototype.addIceCandidate = function(elem) {
         }
     }
     // operate on each content element
-    elem.each(function() {
+    elem.each(function () {
         // would love to deactivate this, but firefox still requires it
         var idx = -1;
         var i;
         for (i = 0; i < obj.remoteSDP.media.length; i++) {
             if (SDPUtil.find_line(obj.remoteSDP.media[i], 'a=mid:' + $(this).attr('name')) ||
-                obj.remoteSDP.media[i].indexOf('m=' + $(this).attr('name')) == 0) {
+                obj.remoteSDP.media[i].indexOf('m=' + $(this).attr('name')) === 0) {
                 idx = i;
                 break;
             }
@@ -503,7 +511,7 @@ JingleSession.prototype.addIceCandidate = function(elem) {
         if (idx == -1) { // fall back to localdescription
             for (i = 0; i < obj.localSDP.media.length; i++) {
                 if (SDPUtil.find_line(obj.localSDP.media[i], 'a=mid:' + $(this).attr('name')) ||
-                    obj.localSDP.media[i].indexOf('m=' + $(this).attr('name')) == 0) {
+                    obj.localSDP.media[i].indexOf('m=' + $(this).attr('name')) === 0) {
                     idx = i;
                     break;
                 }
@@ -511,43 +519,42 @@ JingleSession.prototype.addIceCandidate = function(elem) {
         }
         var name = $(this).attr('name');
         // TODO: check ice-pwd and ice-ufrag?
-        $(this).find('transport>candidate').each(function() {
+        $(this).find('transport>candidate').each(function () {
             var line, candidate;
             line = SDPUtil.candidateFromJingle(this);
             candidate = new RTCIceCandidate({sdpMLineIndex: idx,
                                             sdpMid: name,
                                             candidate: line});
-            console.log(candidate);
             try {
-            obj.peerconnection.addIceCandidate(candidate);
+                obj.peerconnection.addIceCandidate(candidate);
             } catch (e) {
-            console.error('addIceCandidate failed', e.toString(), line);
+                console.error('addIceCandidate failed', e.toString(), line);
             }
-            });
+        });
     });
 };
 
-JingleSession.prototype.sendAnswer = function(provisional) {
+JingleSession.prototype.sendAnswer = function (provisional) {
     console.log('createAnswer', provisional);
     var ob = this;
     this.peerconnection.createAnswer(
-        function(sdp) {
+        function (sdp) {
             ob.createdAnswer(sdp, provisional);
         },
-        function(e) {
+        function (e) {
             console.error('createAnswer failed', e);
         },
         this.media_constraints
     );
 };
 
-JingleSession.prototype.createdAnswer = function(sdp, provisional) {
+JingleSession.prototype.createdAnswer = function (sdp, provisional) {
     console.log('createAnswer callback');
     console.log(sdp);
     var ob = this;
     this.localSDP = new SDP(sdp.sdp);
     //this.localSDP.mangle();
-    this.usepranswer = provisional == true;
+    this.usepranswer = provisional === true;
     if (this.usetrickle) {
         if (!this.usepranswer) {
             var accept = $iq({to: this.peerjid,
@@ -559,12 +566,12 @@ JingleSession.prototype.createdAnswer = function(sdp, provisional) {
                    sid: this.sid });
             this.localSDP.toJingle(accept, this.initiator == this.me ? 'initiator' : 'responder');
             this.connection.sendIQ(accept,
-                function() { 
+                function () {
                     var ack = {};
                     ack.source = 'answer';
                     $(document).trigger('ack.jingle', [ob.sid, ack]);
                 },
-                function(stanza) { 
+                function (stanza) {
                     var error = ($(stanza).find('error').length) ? {
                         code: $(stanza).find('error').attr('code'),
                         reason: $(stanza).find('error :first')[0].tagName,
@@ -575,21 +582,24 @@ JingleSession.prototype.createdAnswer = function(sdp, provisional) {
             10000);
         } else {
             sdp.type = 'pranswer';
-            for (i = 0; i < this.localSDP.media.length; i++) {
+            for (var i = 0; i < this.localSDP.media.length; i++) {
                 this.localSDP.media[i] = this.localSDP.media[i].replace('a=sendrecv\r\n', 'a=inactive\r\n');
             }
             this.localSDP.raw = this.localSDP.session + '\r\n' + this.localSDP.media.join('');
         }
     }
     sdp.sdp = this.localSDP.raw;
-    this.peerconnection.setLocalDescription(sdp, function() {
+    this.peerconnection.setLocalDescription(sdp,
+        function () {
             console.log('setLocalDescription success');
-        }, function(e) {
+        },
+        function (e) {
             console.error('setLocalDescription failed', e);
-    });
+        }
+    );
     var cands = SDPUtil.find_lines(this.localSDP.raw, 'a=candidate:');
-    for (var i = 0; i < cands.length; i++) {
-        var cand = SDPUtil.parse_icecandidate(cands[i]);
+    for (var j = 0; j < cands.length; j++) {
+        var cand = SDPUtil.parse_icecandidate(cands[j]);
         if (cand.type == 'srflx') {
             this.hadstuncandidate = true;
         } else if (cand.type == 'relay') {
@@ -598,7 +608,7 @@ JingleSession.prototype.createdAnswer = function(sdp, provisional) {
     }
 };
 
-JingleSession.prototype.sendTerminate = function(reason, text) {
+JingleSession.prototype.sendTerminate = function (reason, text) {
     var obj = this,
         term = $iq({to: this.peerjid,
                type: 'set'})
@@ -609,11 +619,12 @@ JingleSession.prototype.sendTerminate = function(reason, text) {
         .c('reason')
         .c(reason || 'success');
         
-    if(text)
+    if (text) {
         term.up().c('text').t(text);
+    }
     
     this.connection.sendIQ(term,
-        function() {
+        function () {
             obj.peerconnection.close();
             obj.peerconnection = null;
             obj.terminate();
@@ -621,7 +632,7 @@ JingleSession.prototype.sendTerminate = function(reason, text) {
             ack.source = 'terminate';
             $(document).trigger('ack.jingle', [ob.sid, ack]);
         },
-        function(stanza) { 
+        function (stanza) {
             var error = ($(stanza).find('error').length) ? {
                 code: $(stanza).find('error').attr('code'),
                 reason: $(stanza).find('error :first')[0].tagName,
@@ -629,13 +640,13 @@ JingleSession.prototype.sendTerminate = function(reason, text) {
             $(document).trigger('ack.jingle', [ob.sid, error]);
         },
     10000);
-    if (this.statsinterval != null) {
+    if (this.statsinterval !== null) {
         window.clearInterval(this.statsinterval);
         this.statsinterval = null;
     }
 };
 
-JingleSession.prototype.sendMute = function(muted, content) {
+JingleSession.prototype.sendMute = function (muted, content) {
     var info = $iq({to: this.peerjid,
              type: 'set'})
         .c('jingle', {xmlns: 'urn:xmpp:jingle:1',
@@ -650,7 +661,7 @@ JingleSession.prototype.sendMute = function(muted, content) {
     this.connection.send(info);
 };
 
-JingleSession.prototype.sendRinging = function() {
+JingleSession.prototype.sendRinging = function () {
     var info = $iq({to: this.peerjid,
              type: 'set'})
         .c('jingle', {xmlns: 'urn:xmpp:jingle:1',
@@ -661,17 +672,17 @@ JingleSession.prototype.sendRinging = function() {
     this.connection.send(info);
 };
 
-JingleSession.prototype.getStats = function(interval) {
+JingleSession.prototype.getStats = function (interval) {
     var ob = this;
     var recv = {audio: 0, video: 0};
-    var lost = {audio: 0, video: 0}
+    var lost = {audio: 0, video: 0};
     var lastrecv = {audio: 0, video: 0};
     var lastlost = {audio: 0, video: 0};
     var loss = {audio: 0, video: 0};
     var delta = {audio: 0, video: 0};
-    this.statsinterval = window.setInterval(function() {
+    this.statsinterval = window.setInterval(function () {
         if (ob && ob.peerconnection && ob.peerconnection.getStats) {
-            ob.peerconnection.getStats(function(stats) {
+            ob.peerconnection.getStats(function (stats) {
                 var results = stats.result();
                 // TODO: there are so much statistics you can get from this..
                 for (var i = 0; i < results.length; ++i) {
@@ -679,8 +690,8 @@ JingleSession.prototype.getStats = function(interval) {
                         var packetsrecv = results[i].stat('packetsReceived');
                         var packetslost = results[i].stat('packetsLost');
                         if (packetsrecv && packetslost) {
-                            packetsrecv = parseInt(packetsrecv);
-                            packetslost = parseInt(packetslost);
+                            packetsrecv = parseInt(packetsrecv, 10);
+                            packetslost = parseInt(packetslost, 10);
                             
                             if (results[i].stat('googFrameRateReceived')) {
                                 lastlost.video = lost.video;
@@ -693,13 +704,13 @@ JingleSession.prototype.getStats = function(interval) {
                                 recv.audio = packetsrecv;
                                 lost.audio = packetslost;
                             }
-                        }                           
+                        }
                     }
                 }
                 delta.audio = recv.audio - lastrecv.audio;
                 delta.video = recv.video - lastrecv.video;
-                loss.audio = (delta.audio > 0) ? Math.ceil(100*(lost.audio - lastlost.audio)/delta.audio) : 0;
-                loss.video = (delta.video > 0) ? Math.ceil(100*(lost.video - lastlost.video)/delta.video) : 0;
+                loss.audio = (delta.audio > 0) ? Math.ceil(100 * (lost.audio - lastlost.audio) / delta.audio) : 0;
+                loss.video = (delta.video > 0) ? Math.ceil(100 * (lost.video - lastlost.video) / delta.video) : 0;
                 $(document).trigger('packetloss.jingle', [ob.sid, loss]);
             });
         }

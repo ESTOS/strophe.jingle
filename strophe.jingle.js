@@ -1,17 +1,20 @@
+/* jshint -W117 */
 Strophe.addConnectionPlugin('jingle', {
     connection: null,
     sessions: {},
     jid2session: {},
     ice_config: {iceServers: []},
     pc_constraints: {},
-    media_constraints: {'mandatory': {
-        'OfferToReceiveAudio': true,
-        'OfferToReceiveVideo': true }
+    media_constraints: {
+        mandatory: {
+            'OfferToReceiveAudio': true,
+            'OfferToReceiveVideo': true
+        }
         // MozDontOfferDataChannel: true when this is firefox
     },
     localStream: null,
 
-    init: function(conn) {
+    init: function (conn) {
         this.connection = conn;
         if (this.connection.disco) {
             // http://xmpp.org/extensions/xep-0167.html#support
@@ -31,7 +34,7 @@ Strophe.addConnectionPlugin('jingle', {
         }
         this.connection.addHandler(this.onJingle.bind(this), 'urn:xmpp:jingle:1', 'iq', 'set', null, null);
     },
-    onJingle: function(iq) {
+    onJingle: function (iq) {
         var sid = $(iq).find('jingle').attr('sid');
         var action = $(iq).find('jingle').attr('action');
         // send ack first
@@ -42,7 +45,7 @@ Strophe.addConnectionPlugin('jingle', {
         console.log('on jingle ' + action);
         var sess = this.sessions[sid];
         if ('session-initiate' != action) {
-            if (sess == null) {
+            if (sess === null) {
                 ack.type = 'error';
                 ack.c('error', {type: 'cancel'})
                    .c('item-not-found', {xmlns: 'urn:ietf:params:xml:ns:xmpp-stanzas'}).up()
@@ -61,12 +64,12 @@ Strophe.addConnectionPlugin('jingle', {
                 this.connection.send(ack);
                 return true;
             }
-        } else if (sess != null) {
+        } else if (sess !== null) {
             // existing session with same session id
             // this might be out-of-order if the sess.peerjid is the same as from
             ack.type = 'error';
             ack.c('error', {type: 'cancel'})
-               .c('service-unavailable', {xmlns: 'urn:ietf:params:xml:ns:xmpp-stanzas'}).up()
+               .c('service-unavailable', {xmlns: 'urn:ietf:params:xml:ns:xmpp-stanzas'}).up();
             console.warn('duplicate session id', sid);
             return true;
         }
@@ -100,10 +103,10 @@ Strophe.addConnectionPlugin('jingle', {
         case 'session-terminate':
             console.log('terminating...');
             sess.terminate();
-            this.terminate(sess.sid); 
+            this.terminate(sess.sid);
             if ($(iq).find('>jingle>reason').length) {
                 $(document).trigger('callterminated.jingle', [
-                    sess.sid, 
+                    sess.sid,
                     $(iq).find('>jingle>reason>:first')[0].tagName,
                     $(iq).find('>jingle>reason>text').text()
                 ]);
@@ -115,13 +118,14 @@ Strophe.addConnectionPlugin('jingle', {
             sess.addIceCandidate($(iq).find('>jingle>content'));
             break;
         case 'session-info':
+            var affected;
             if ($(iq).find('>jingle>ringing[xmlns="urn:xmpp:jingle:apps:rtp:info:1"]').length) {
                 $(document).trigger('ringing.jingle', [sess.sid]);
             } else if ($(iq).find('>jingle>mute[xmlns="urn:xmpp:jingle:apps:rtp:info:1"]').length) {
-                var affected = $(iq).find('>jingle>mute[xmlns="urn:xmpp:jingle:apps:rtp:info:1"]').attr('name');
+                affected = $(iq).find('>jingle>mute[xmlns="urn:xmpp:jingle:apps:rtp:info:1"]').attr('name');
                 $(document).trigger('mute.jingle', [sess.sid, affected]);
             } else if ($(iq).find('>jingle>unmute[xmlns="urn:xmpp:jingle:apps:rtp:info:1"]').length) {
-                var affected = $(iq).find('>jingle>unmute[xmlns="urn:xmpp:jingle:apps:rtp:info:1"]').attr('name');
+                affected = $(iq).find('>jingle>unmute[xmlns="urn:xmpp:jingle:apps:rtp:info:1"]').attr('name');
                 $(document).trigger('unmute.jingle', [sess.sid, affected]);
             }
             break;
@@ -131,7 +135,7 @@ Strophe.addConnectionPlugin('jingle', {
         }
         return true;
     },
-    initiate: function(peerjid, myjid) { // initiate a new jinglesession to peerjid
+    initiate: function (peerjid, myjid) { // initiate a new jinglesession to peerjid
         var sess = new JingleSession(myjid,
                                      Math.random().toString(36).substr(2, 12), // random string
                                      this.connection);
@@ -147,26 +151,26 @@ Strophe.addConnectionPlugin('jingle', {
         sess.sendOffer();
         return sess;
     },
-    terminate: function(sid, reason, text) { // terminate by sessionid (or all sessions)
-        if (sid == null) {
+    terminate: function (sid, reason, text) { // terminate by sessionid (or all sessions)
+        if (sid === null) {
             for (sid in this.sessions) {
-                if(this.sessions[sid].state != 'ended'){
-                    this.sessions[sid].sendTerminate(reason||(!this.sessions[sid].active())?'cancel':null, text);
+                if (this.sessions[sid].state != 'ended') {
+                    this.sessions[sid].sendTerminate(reason || (!this.sessions[sid].active()) ? 'cancel' : null, text);
                     this.sessions[sid].terminate();
                 }
                 delete this.jid2session[this.sessions[sid].peerjid];
                 delete this.sessions[sid];
             }
         } else if (this.sessions.hasOwnProperty(sid)) {
-            if(this.sessions[sid].state != 'ended'){
-                this.sessions[sid].sendTerminate(reason||(!this.sessions[sid].active())?'cancel':null, text);
+            if (this.sessions[sid].state != 'ended') {
+                this.sessions[sid].sendTerminate(reason || (!this.sessions[sid].active()) ? 'cancel' : null, text);
                 this.sessions[sid].terminate();
             }
             delete this.jid2session[this.sessions[sid].peerjid];
             delete this.sessions[sid];
         }
     },
-    terminateByJid: function(jid) {
+    terminateByJid: function (jid) {
         if (this.jid2session.hasOwnProperty(jid)) {
             var sess = this.jid2session[jid];
             if (sess) {
@@ -178,7 +182,7 @@ Strophe.addConnectionPlugin('jingle', {
             }
         }
     },
-    getStunAndTurnCredentials: function() {
+    getStunAndTurnCredentials: function () {
         // get stun and turn configuration from server via xep-0215
         // uses time-limited credentials as described in
         // http://tools.ietf.org/html/draft-uberti-behave-turn-rest-00
@@ -193,9 +197,9 @@ Strophe.addConnectionPlugin('jingle', {
         this.connection.sendIQ(
             $iq({type: 'get', to: this.connection.domain})
                 .c('services', {xmlns: 'urn:xmpp:extdisco:1'}).c('service', {host: 'turn.' + this.connection.domain}),
-            function(res) {
+            function (res) {
                 var iceservers = [];
-                $(res).find('>services>service').each(function(idx, el) {
+                $(res).find('>services>service').each(function (idx, el) {
                     el = $(el);
                     var dict = {};
                     switch (el.attr('type')) {
@@ -209,7 +213,7 @@ Strophe.addConnectionPlugin('jingle', {
                     case 'turn':
                         dict.url = 'turn:';
                         if (el.attr('username')) { // https://code.google.com/p/webrtc/issues/detail?id=1508
-                            if (navigator.userAgent.match(/Chrom(e|ium)\/([0-9]+)\./) && parseInt(navigator.userAgent.match(/Chrom(e|ium)\/([0-9]+)\./)[2]) < 28) {
+                            if (navigator.userAgent.match(/Chrom(e|ium)\/([0-9]+)\./) && parseInt(navigator.userAgent.match(/Chrom(e|ium)\/([0-9]+)\./)[2], 10) < 28) {
                                 dict.url += el.attr('username') + '@';
                             } else {
                                 dict.username = el.attr('username'); // only works in M28
@@ -231,7 +235,7 @@ Strophe.addConnectionPlugin('jingle', {
                 });
                 this.ice_config.iceServers = iceservers;
             },
-            function(err) {
+            function (err) {
                 console.warn('getting turn credentials failed', err);
                 console.warn('is mod_turncredentials or similar installed?');
             }
