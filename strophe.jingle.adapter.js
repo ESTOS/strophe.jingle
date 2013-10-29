@@ -58,13 +58,13 @@ function setupRTC() {
 function getUserMediaWithConstraints(um, resolution, bandwidth, fps) {
     var constraints = {audio: false, video: false};
 
-    if ($.inArray('video', um) >= 0) {
+    if (um.indexOf('video') >= 0) {
         constraints.video = {mandatory: {}};// same behaviour as true
     }
-    if ($.inArray('audio', um) >= 0) {
+    if (um.indexOf('audio') >= 0) {
         constraints.audio = {};// same behaviour as true
     }
-    if ($.inArray('screen', um) >= 0) {
+    if (um.indexOf('screen') >= 0) {
         constraints.video = {
             "mandatory": {
                 "chromeMediaSource": "screen"

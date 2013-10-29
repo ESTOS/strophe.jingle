@@ -260,7 +260,7 @@ JingleSession.prototype.sendIceCandidate = function (candidate) {
             cand.up();
             // add fingerprint
             if (SDPUtil.find_line(this.localSDP.media[candidate.sdpMLineIndex], 'a=fingerprint:', this.localSDP.session)) {
-                tmp = SDPUtil.parse_fingerprint(SDPUtil.find_line(this.localSDP.media[candidate.sdpMLineIndex], 'a=fingerprint:', this.localSDP.session));
+                var tmp = SDPUtil.parse_fingerprint(SDPUtil.find_line(this.localSDP.media[candidate.sdpMLineIndex], 'a=fingerprint:', this.localSDP.session));
                 tmp.required = true;
                 cand.c('fingerprint').t(tmp.fingerprint);
                 delete tmp.fingerprint;
@@ -445,7 +445,7 @@ JingleSession.prototype.addIceCandidate = function (elem) {
                 's=-\r\n' +
                 't=0 0\r\n';
             // first, take some things from the local description
-            for (i = 0; i < this.localSDP.media.length; i++) {
+            for (var i = 0; i < this.localSDP.media.length; i++) {
                 cobbled += SDPUtil.find_line(this.localSDP.media[i], 'm=') + '\r\n';
                 cobbled += SDPUtil.find_lines(this.localSDP.media[i], 'a=rtpmap:').join('\r\n') + '\r\n';
                 if (SDPUtil.find_line(this.localSDP.media[i], 'a=mid:')) {
@@ -630,14 +630,14 @@ JingleSession.prototype.sendTerminate = function (reason, text) {
             obj.terminate();
             var ack = {};
             ack.source = 'terminate';
-            $(document).trigger('ack.jingle', [ob.sid, ack]);
+            $(document).trigger('ack.jingle', [obj.sid, ack]);
         },
         function (stanza) {
             var error = ($(stanza).find('error').length) ? {
                 code: $(stanza).find('error').attr('code'),
                 reason: $(stanza).find('error :first')[0].tagName,
             }:{};
-            $(document).trigger('ack.jingle', [ob.sid, error]);
+            $(document).trigger('ack.jingle', [obj.sid, error]);
         },
     10000);
     if (this.statsinterval !== null) {

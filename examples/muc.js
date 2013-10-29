@@ -146,7 +146,7 @@ function doJoin() {
 function onMediaReady(event, stream) {
     localStream = stream;
     connection.jingle.localStream = stream;
-    for (i = 0; i < localStream.getAudioTracks().length; i++) {
+    for (var i = 0; i < localStream.getAudioTracks().length; i++) {
         setStatus('using audio device "' + localStream.getAudioTracks()[i].label + '"');
     }
     for (i = 0; i < localStream.getVideoTracks().length; i++) {
@@ -276,7 +276,7 @@ function onCallTerminated(event, sid, reason) {
 }
 
 function waitForRemoteVideo(selector, sid) {
-    sess = connection.jingle.sessions[sid];
+    var sess = connection.jingle.sessions[sid];
     videoTracks = sess.remoteStream.getVideoTracks();
     if (videoTracks.length === 0 || selector[0].currentTime > 0) {
         $(document).trigger('callactive.jingle', [selector, sid]);
