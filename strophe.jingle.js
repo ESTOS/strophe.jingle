@@ -25,12 +25,13 @@ Strophe.addConnectionPlugin('jingle', {
             this.connection.disco.addFeature('urn:xmpp:jingle:apps:rtp:audio');
             this.connection.disco.addFeature('urn:xmpp:jingle:apps:rtp:video');
 
-            this.connection.disco.addFeature('urn:ietf:rfc:5761'); // rtcp-mux
 
-            // well, this is canary only yet -- and dealt with by SDP O/A so it is not
-            // necessary to add this
+            // this is dealt with by SDP O/A so we don't need to annouce this
             //this.connection.disco.addFeature('urn:xmpp:jingle:apps:rtp:rtcp-fb:0'); // XEP-0293
             //this.connection.disco.addFeature('urn:xmpp:jingle:apps:rtp:rtp-hdrext:0'); // XEP-0294
+            this.connection.disco.addFeature('urn:ietf:rfc:5761'); // rtcp-mux
+            //this.connection.disco.addFeature('urn:ietf:rfc:5888'); // a=group, e.g. bundle
+            //this.connection.disco.addFeature('urn:ietf:rfc:5576'); // a=ssrc
         }
         this.connection.addHandler(this.onJingle.bind(this), 'urn:xmpp:jingle:1', 'iq', 'set', null, null);
     },
@@ -152,7 +153,7 @@ Strophe.addConnectionPlugin('jingle', {
         return sess;
     },
     terminate: function (sid, reason, text) { // terminate by sessionid (or all sessions)
-        if (sid === null) {
+        if (sid === null || sid === undefined) {
             for (sid in this.sessions) {
                 if (this.sessions[sid].state != 'ended') {
                     this.sessions[sid].sendTerminate(reason || (!this.sessions[sid].active()) ? 'cancel' : null, text);
