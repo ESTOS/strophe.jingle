@@ -5,6 +5,8 @@ strophe.jingle is a webrtc connection plugin for [strophe.js](http://strophe.im/
 
 This plugin makes it possible to negotiate audio/video streams via XMPP and then relinquish control to the WebRTC support of browsers like Firefox and Chrome for the actual out-of-band media streams. XMPP/Jingle you get the authenticated, secured and federated media signaling, whereas WebRTC gives you an API to set up the media streams using RTP/ICE/STUN and provide access to cameras and microphones.
 
+The ["Silo-Free WebRTC"](http://vimeo.com/77289728) talk from the 2013 Realtime Conference explains this very well. The XMPP specific part starts around 17:00.
+
 Features:
 - mostly standards-compliant jingle, mapping from WebRTCs SDP to Jingle and vice versa. Aiming for full compliance with XEPs 0166, 0167, 0293, 0294 and 0320.
 - tested with chrome and firefox.
