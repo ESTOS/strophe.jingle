@@ -127,8 +127,15 @@ SDP.prototype.toJingle = function (elem, thecreator) {
                 // new style mapping
                 elem.c('source', { ssrc: ssrc, xmlns: 'urn:xmpp:jingle:apps:rtp:ssma:0' });
                 // FIXME: group by ssrc and support multiple different ssrcs
-                $.each(SDPUtil.find_lines(this.media[i], 'a=ssrc:'), function (idx, line) {
+                var ssrclines = SDPUtil.find_lines(this.media[i], 'a=ssrc:');
+                ssrclines.forEach(function(line) {
                     idx = line.indexOf(' ');
+                    var linessrc = line.substr(0, idx).substr(7);
+                    if (linessrc != ssrc) {
+                        elem.up();
+                        ssrc = linessrc;
+                        elem.c('source', { ssrc: ssrc, xmlns: 'urn:xmpp:jingle:apps:rtp:ssma:0' });
+                    }
                     var kv = line.substr(idx + 1);
                     elem.c('parameter');
                     if (kv.indexOf(':') == -1) {
