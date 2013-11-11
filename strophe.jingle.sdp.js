@@ -117,7 +117,8 @@ SDP.prototype.toJingle = function (elem, thecreator) {
             }
             if (SDPUtil.find_line(this.media[i], 'a=crypto:', this.session)) {
                 elem.c('encryption', {required: 1});
-                $.each(SDPUtil.find_lines(this.media[i], 'a=crypto:', this.session), function (idx, line) {
+                var crypto = SDPUtil.find_lines(this.media[i], 'a=crypto:', this.session);
+                crypto.forEach(function(line) {
                     elem.c('crypto', SDPUtil.parse_crypto(line)).up();
                 });
                 elem.up(); // end of encryption
@@ -195,7 +196,8 @@ SDP.prototype.toJingle = function (elem, thecreator) {
 
         elem.c('transport', {xmlns: 'urn:xmpp:jingle:transports:ice-udp:1'});
         // XEP-0320
-        $.each(SDPUtil.find_lines(this.media[i], 'a=fingerprint:', this.session), function (idx, line) {
+        var fingerprints = SDPUtil.find_lines(this.media[i], 'a=fingerprint:', this.session);
+        fingerprints.forEach(function(line) {
             tmp = SDPUtil.parse_fingerprint(line);
             tmp.xmlns = 'urn:xmpp:tmp:jingle:apps:dtls:0';
             // tmp.xmlns = 'urn:xmpp:jingle:apps:dtls:0'; -- FIXME: update receivers first
