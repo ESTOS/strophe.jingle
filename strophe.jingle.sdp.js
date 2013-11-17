@@ -417,7 +417,7 @@ SDP.prototype.jingle2media = function (content) {
         });
     }
     desc.find('payload-type').each(function () {
-        media += SDPUtil.build_rtpmap(this) + '\r\n';
+        media += SDPUtil.build_rtpmap($(this)) + '\r\n';
         if ($(this).find('>parameter').length) {
             media += 'a=fmtp:' + $(this).attr('id') + ' ';
             media += $(this).find('parameter').map(function () { return ($(this).attr('name') ? ($(this).attr('name') + '=') : '') + $(this).attr('value'); }).get().join(';');
@@ -517,9 +517,9 @@ SDPUtil = {
         return data;
     },
     build_rtpmap: function (el) {
-        var line = 'a=rtpmap:' + $(el).attr('id') + ' ' + $(el).attr('name') + '/' + $(el).attr('clockrate');
-        if ($(el).attr('channels') && $(el).attr('channels') != '1') {
-            line += '/' + $(el).attr('channels');
+        var line = 'a=rtpmap:' + el.attr('id') + ' ' + el.attr('name') + '/' + el.attr('clockrate');
+        if (el.attr('channels') && el.attr('channels') != '1') {
+            line += '/' + el.attr('channels');
         }
         return line;
     },
