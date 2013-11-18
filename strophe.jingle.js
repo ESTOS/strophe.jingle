@@ -80,7 +80,9 @@ Strophe.addConnectionPlugin('jingle', {
         case 'session-initiate':
             sess = new JingleSession($(iq).attr('to'), $(iq).find('jingle').attr('sid'), this.connection);
             // configure session
-            sess.localStream = this.localStream;
+            if (this.localStream) {
+                sess.localStreams.push(this.localStream);
+            }
             sess.media_constraints = this.media_constraints;
             sess.pc_constraints = this.pc_constraints;
             sess.ice_config = this.ice_config;
@@ -141,7 +143,9 @@ Strophe.addConnectionPlugin('jingle', {
                                      Math.random().toString(36).substr(2, 12), // random string
                                      this.connection);
         // configure session
-        sess.localStream = this.localStream;
+        if (this.localStream) {
+            sess.localStreams.push(this.localStream);
+        }
         sess.media_constraints = this.media_constraints;
         sess.pc_constraints = this.pc_constraints;
         sess.ice_config = this.ice_config;
