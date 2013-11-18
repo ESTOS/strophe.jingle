@@ -51,7 +51,7 @@ SDP.prototype.toJingle = function (elem, thecreator) {
             tmp = lines[i].split(' ');
             var semantics = tmp.shift().substr(8);
             // new plan
-            elem.c('group', {xmlns: 'urn:xmpp:jingle:apps:grouping:0', type: semantics});
+            elem.c('group', {xmlns: 'urn:xmpp:jingle:apps:grouping:0', type: semantics, semantics:semantics});
             for (j = 0; j < tmp.length; j++) {
                 elem.c('content', {name: tmp[j]}).up();
             }
@@ -292,14 +292,16 @@ SDP.prototype.fromJingle = function (jingle) {
         't=0 0\r\n';
     // http://tools.ietf.org/html/draft-ietf-mmusic-sdp-bundle-negotiation-04#section-8
     if ($(jingle).find('>group[xmlns="urn:xmpp:jingle:apps:grouping:0"]').length) {
+        try {
         $(jingle).find('>group[xmlns="urn:xmpp:jingle:apps:grouping:0"]').each(function (idx, group) {
             var contents = $(group).find('>content').map(function (idx, content) {
                 return $(content).attr('name');
             }).get();
-            if ($(group).attr('type') !== null && contents.length > 0) {
-                obj.raw += 'a=group:' + $(group).attr('type') + ' ' + contents.join(' ') + '\r\n';
+            if (contents.length > 0) {
+                obj.raw += 'a=group:' + ($(group).attr('semantics') || $(group).attr('type')) + ' ' + contents.join(' ') + '\r\n';
             }
         });
+        } catch (e) { console.error(e.toString()); }
     } else if ($(jingle).find('>group[xmlns="urn:ietf:rfc:5888"]').length) {
         // temporary namespace, not to be used. to be removed soon.
         $(jingle).find('>group[xmlns="urn:ietf:rfc:5888"]').each(function (idx, group) {
