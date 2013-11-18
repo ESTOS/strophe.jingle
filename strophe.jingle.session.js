@@ -67,7 +67,7 @@ JingleSession.prototype.initiate = function (peerjid, isInitiator) {
     };
     this.peerconnection.onaddstream = function (event) {
         obj.remoteStream = event.stream;
-        this.remoteStreams.push(event.stream);
+        obj.remoteStreams.push(event.stream);
         $(document).trigger('remotestreamadded.jingle', [event, obj.sid]);
     };
     this.peerconnection.onremovestream = function (event) {
