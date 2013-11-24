@@ -34,6 +34,8 @@ function JingleSession(me, sid, connection) {
     this.statsinterval = null;
 
     this.reason = null;
+
+    this.pendingssrc =  [];
 }
 
 JingleSession.prototype.initiate = function (peerjid, isInitiator) {
@@ -651,6 +653,87 @@ JingleSession.prototype.sendTerminate = function (reason, text) {
         this.statsinterval = null;
     }
 };
+
+
+JingleSession.prototype.addSource = function (elem) {
+    console.log('addssrc', new Date().getTime());
+    console.log('ice', this.peerconnection.iceConnectionState);
+    var sdp = new SDP(this.peerconnection.remoteDescription.sdp);
+    var ob = this;
+    $(elem).each(function (idx, content) {
+        var name = $(content).attr('name');
+        var newlines = '';
+        tmp = $(content).find('>source[xmlns="urn:xmpp:jingle:apps:rtp:ssma:0"]');
+        tmp.each(function () {
+            var ssrc = $(this).attr('ssrc');
+            $(this).find('>parameter').each(function () {
+                newlines += 'a=ssrc:' + ssrc + ' ' + $(this).attr('name');
+                if ($(this).attr('value') && $(this).attr('value').length)
+                    newlines += ':' + $(this).attr('value');
+                newlines += '\r\n';
+            });
+        });
+        console.log(name, newlines);
+        sdp.media.forEach(function(media, idx) {
+            // remove a=crypto lines
+            // FIXME: port this over to reallyAddSource...
+            while(SDPUtil.find_line(sdp.media[idx], 'a=crypto:')) {
+                sdp.media[idx] = sdp.media[idx].replace(SDPUtil.find_line(sdp.media[idx], 'a=crypto:')+'\r\n', '');
+            }
+            if (!SDPUtil.find_line(media, 'a=mid:' + name))
+                return;
+            sdp.media[idx] += newlines;
+            if (!ob.pendingssrc[idx]) ob.pendingssrc[idx] = '';
+            ob.pendingssrc[idx] += newlines;
+        });
+        sdp.raw = sdp.session + sdp.media.join('');
+    });
+    this.reallyAddSource();
+}
+
+JingleSession.prototype.reallyAddSource = function() {
+    var ob = this;
+    if (!this.pendingssrc.length) return;
+    if (!(this.peerconnection.signalingState == 'stable' && this.peerconnection.iceConnectionState == 'connected')) {
+        console.warn('addNewRemoteSSRC not yet', this.peerconnection.signalingState, this.peerconnection.iceConnectionState);
+        window.setTimeout(function() { ob.reallyAddSource(); }, 250);
+        return;
+    }
+
+    console.log('ice', this.peerconnection.iceConnectionState);
+    var sdp = new SDP(this.peerconnection.remoteDescription.sdp);
+    sdp.media.forEach(function(media, idx) {
+        sdp.media[idx] = sdp.media[idx].replace('a=recvonly', 'a=sendrecv'); // WTF?
+        sdp.media[idx] += ob.pendingssrc[idx];
+    });
+    this.pendingssrc = [];
+    sdp.raw = sdp.session + sdp.media.join('');
+    console.warn(sdp.raw);
+    this.peerconnection.setRemoteDescription(new RTCSessionDescription({type: 'offer', sdp: sdp.raw}),
+        function() {
+            console.log('modify ok');
+            ob.peerconnection.createAnswer(
+                function(modifiedAnswer) {
+                    console.log('modified answer...');
+                    ob.peerconnection.setLocalDescription(modifiedAnswer,
+                        function() {
+                            console.log('modified setLocalDescription ok');
+                        },
+                        function(error) {
+                            console.log('modified setLocalDescription failed');
+                        }
+                    );
+                },
+                function(error) {
+                    console.log('modified answer failed');
+                }
+            );
+        },
+        function(error) {
+            console.log('modify failed');
+        }
+    );
+}
 
 JingleSession.prototype.sendMute = function (muted, content) {
     var info = $iq({to: this.peerjid,

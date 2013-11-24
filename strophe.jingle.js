@@ -74,6 +74,7 @@ Strophe.addConnectionPlugin('jingle', {
             console.warn('duplicate session id', sid);
             return true;
         }
+        // FIXME: check for a defined action
         this.connection.send(ack);
         // see http://xmpp.org/extensions/xep-0166.html#concepts-session
         switch (action) {
@@ -131,6 +132,9 @@ Strophe.addConnectionPlugin('jingle', {
                 affected = $(iq).find('>jingle>unmute[xmlns="urn:xmpp:jingle:apps:rtp:info:1"]').attr('name');
                 $(document).trigger('unmute.jingle', [sess.sid, affected]);
             }
+            break;
+        case 'addsource': // FIXME: proprietary
+            sess.addSource($(iq).find('>jingle>content'));
             break;
         default:
             console.warn('jingle action not implemented', action);
