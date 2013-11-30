@@ -36,6 +36,8 @@ function JingleSession(me, sid, connection) {
     this.reason = null;
 
     this.pendingssrc =  [];
+
+    this.wait = true;
 }
 
 JingleSession.prototype.initiate = function (peerjid, isInitiator) {
@@ -659,6 +661,7 @@ JingleSession.prototype.addSource = function (elem) {
     console.log('addssrc', new Date().getTime());
     console.log('ice', this.peerconnection.iceConnectionState);
     var sdp = new SDP(this.peerconnection.remoteDescription.sdp);
+
     var ob = this;
     $(elem).each(function (idx, content) {
         var name = $(content).attr('name');
@@ -696,12 +699,21 @@ JingleSession.prototype.reallyAddSource = function() {
     if (!this.pendingssrc.length) return;
     if (!(this.peerconnection.signalingState == 'stable' && this.peerconnection.iceConnectionState == 'connected')) {
         console.warn('addNewRemoteSSRC not yet', this.peerconnection.signalingState, this.peerconnection.iceConnectionState);
+        this.wait = true;
         window.setTimeout(function() { ob.reallyAddSource(); }, 250);
+        return;
+    }
+    if (this.wait) {
+        window.setTimeout(function() { ob.reallyAddSource(); }, 2500);
+        this.wait = false;
         return;
     }
 
     console.log('ice', this.peerconnection.iceConnectionState);
     var sdp = new SDP(this.peerconnection.remoteDescription.sdp);
+    if (SDPUtil.find_line(sdp.session, 'a=msid-semantic:')) {
+        sdp.session = sdp.session.replace(SDPUtil.find_line(sdp.session, 'a=msid-semantic:') + '\r\n', '');
+    }
     sdp.media.forEach(function(media, idx) {
         sdp.media[idx] = sdp.media[idx].replace('a=recvonly', 'a=sendrecv'); // WTF?
         sdp.media[idx] += ob.pendingssrc[idx];
