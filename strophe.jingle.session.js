@@ -36,6 +36,7 @@ function JingleSession(me, sid, connection) {
     this.reason = null;
 
     this.addssrc = [];
+    this.removessrc = [];
 
     this.wait = true;
 }
@@ -665,60 +666,120 @@ JingleSession.prototype.addSource = function (elem) {
     var ob = this;
     $(elem).each(function (idx, content) {
         var name = $(content).attr('name');
-        var newlines = '';
+        var lines = '';
         tmp = $(content).find('>source[xmlns="urn:xmpp:jingle:apps:rtp:ssma:0"]');
         tmp.each(function () {
             var ssrc = $(this).attr('ssrc');
             $(this).find('>parameter').each(function () {
-                newlines += 'a=ssrc:' + ssrc + ' ' + $(this).attr('name');
+                lines += 'a=ssrc:' + ssrc + ' ' + $(this).attr('name');
                 if ($(this).attr('value') && $(this).attr('value').length)
-                    newlines += ':' + $(this).attr('value');
-                newlines += '\r\n';
+                    lines += ':' + $(this).attr('value');
+                lines += '\r\n';
             });
         });
-        console.log(name, newlines);
+        console.log(name, lines);
         sdp.media.forEach(function(media, idx) {
+            /*
             // remove a=crypto lines
-            // FIXME: port this over to reallyAddSource...
+            // FIXME: port this over to modifySources...
             while(SDPUtil.find_line(sdp.media[idx], 'a=crypto:')) {
                 sdp.media[idx] = sdp.media[idx].replace(SDPUtil.find_line(sdp.media[idx], 'a=crypto:')+'\r\n', '');
             }
+            */
             if (!SDPUtil.find_line(media, 'a=mid:' + name))
                 return;
-            sdp.media[idx] += newlines;
+            sdp.media[idx] += lines;
             if (!ob.addssrc[idx]) ob.addssrc[idx] = '';
-            ob.addssrc[idx] += newlines;
+            ob.addssrc[idx] += lines;
         });
         sdp.raw = sdp.session + sdp.media.join('');
     });
-    this.reallyAddSource();
-}
+    this.modifySources();
+};
 
-JingleSession.prototype.reallyAddSource = function() {
+JingleSession.prototype.removeSource = function (elem) {
+    console.log('removessrc', new Date().getTime());
+    console.log('ice', this.peerconnection.iceConnectionState);
+    var sdp = new SDP(this.peerconnection.remoteDescription.sdp);
+
     var ob = this;
-    if (!this.addssrc.length) return;
+    $(elem).each(function (idx, content) {
+        var name = $(content).attr('name');
+        var lines = '';
+        tmp = $(content).find('>source[xmlns="urn:xmpp:jingle:apps:rtp:ssma:0"]');
+        tmp.each(function () {
+            var ssrc = $(this).attr('ssrc');
+            $(this).find('>parameter').each(function () {
+                lines += 'a=ssrc:' + ssrc + ' ' + $(this).attr('name');
+                if ($(this).attr('value') && $(this).attr('value').length)
+                    lines += ':' + $(this).attr('value');
+                lines += '\r\n';
+            });
+        });
+        console.log(name, lines);
+        sdp.media.forEach(function(media, idx) {
+            /*
+            // remove a=crypto lines
+            // FIXME: port this over to modifySources...
+            while(SDPUtil.find_line(sdp.media[idx], 'a=crypto:')) {
+                sdp.media[idx] = sdp.media[idx].replace(SDPUtil.find_line(sdp.media[idx], 'a=crypto:')+'\r\n', '');
+            }
+            */
+            if (!SDPUtil.find_line(media, 'a=mid:' + name))
+                return;
+            sdp.media[idx] += lines;
+            if (!ob.addssrc[idx]) ob.removessrc[idx] = '';
+            ob.removessrc[idx] += lines;
+        });
+        sdp.raw = sdp.session + sdp.media.join('');
+    });
+    console.log(this.removessrc);
+    this.modifySources();
+};
+
+
+
+JingleSession.prototype.modifySources = function() {
+    var ob = this;
+    if (!(this.addssrc.length || this.removessrc.length)) return;
     if (!(this.peerconnection.signalingState == 'stable' && this.peerconnection.iceConnectionState == 'connected')) {
         console.warn('addNewRemoteSSRC not yet', this.peerconnection.signalingState, this.peerconnection.iceConnectionState);
         this.wait = true;
-        window.setTimeout(function() { ob.reallyAddSource(); }, 250);
+        window.setTimeout(function() { ob.modifySources(); }, 250);
         return;
     }
     if (this.wait) {
-        window.setTimeout(function() { ob.reallyAddSource(); }, 2500);
+        window.setTimeout(function() { ob.modifySources(); }, 2500);
         this.wait = false;
         return;
     }
 
     console.log('ice', this.peerconnection.iceConnectionState);
     var sdp = new SDP(this.peerconnection.remoteDescription.sdp);
+    // mangle SDP a little... not sure if this is required anymore
     if (SDPUtil.find_line(sdp.session, 'a=msid-semantic:')) {
         sdp.session = sdp.session.replace(SDPUtil.find_line(sdp.session, 'a=msid-semantic:') + '\r\n', '');
     }
     sdp.media.forEach(function(media, idx) {
         sdp.media[idx] = sdp.media[idx].replace('a=recvonly', 'a=sendrecv'); // WTF?
-        sdp.media[idx] += ob.addssrc[idx];
+    });
+
+    // add sources
+    this.addssrc.forEach(function(lines, idx) {
+        sdp.media[idx] += lines;
     });
     this.addssrc = [];
+
+    // remove sources
+    this.removessrc.forEach(function(lines, idx) {
+        lines = lines.split('\r\n');
+        lines.pop(); // remove empty last element;
+        lines.forEach(function(line) {
+            sdp.media[idx] = sdp.media[idx].replace(line + '\r\n', '');
+        });
+    });
+    this.removessrc = [];
+
     sdp.raw = sdp.session + sdp.media.join('');
     console.warn(sdp.raw);
     this.peerconnection.setRemoteDescription(new RTCSessionDescription({type: 'offer', sdp: sdp.raw}),
