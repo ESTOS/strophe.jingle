@@ -35,7 +35,7 @@ function JingleSession(me, sid, connection) {
 
     this.reason = null;
 
-    this.pendingssrc =  [];
+    this.addssrc = [];
 
     this.wait = true;
 }
@@ -686,8 +686,8 @@ JingleSession.prototype.addSource = function (elem) {
             if (!SDPUtil.find_line(media, 'a=mid:' + name))
                 return;
             sdp.media[idx] += newlines;
-            if (!ob.pendingssrc[idx]) ob.pendingssrc[idx] = '';
-            ob.pendingssrc[idx] += newlines;
+            if (!ob.addssrc[idx]) ob.addssrc[idx] = '';
+            ob.addssrc[idx] += newlines;
         });
         sdp.raw = sdp.session + sdp.media.join('');
     });
@@ -696,7 +696,7 @@ JingleSession.prototype.addSource = function (elem) {
 
 JingleSession.prototype.reallyAddSource = function() {
     var ob = this;
-    if (!this.pendingssrc.length) return;
+    if (!this.addssrc.length) return;
     if (!(this.peerconnection.signalingState == 'stable' && this.peerconnection.iceConnectionState == 'connected')) {
         console.warn('addNewRemoteSSRC not yet', this.peerconnection.signalingState, this.peerconnection.iceConnectionState);
         this.wait = true;
@@ -716,9 +716,9 @@ JingleSession.prototype.reallyAddSource = function() {
     }
     sdp.media.forEach(function(media, idx) {
         sdp.media[idx] = sdp.media[idx].replace('a=recvonly', 'a=sendrecv'); // WTF?
-        sdp.media[idx] += ob.pendingssrc[idx];
+        sdp.media[idx] += ob.addssrc[idx];
     });
-    this.pendingssrc = [];
+    this.addssrc = [];
     sdp.raw = sdp.session + sdp.media.join('');
     console.warn(sdp.raw);
     this.peerconnection.setRemoteDescription(new RTCSessionDescription({type: 'offer', sdp: sdp.raw}),
@@ -745,7 +745,7 @@ JingleSession.prototype.reallyAddSource = function() {
             console.log('modify failed');
         }
     );
-}
+};
 
 JingleSession.prototype.sendMute = function (muted, content) {
     var info = $iq({to: this.peerjid,
