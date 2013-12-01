@@ -743,7 +743,7 @@ JingleSession.prototype.modifySources = function() {
     var ob = this;
     if (!(this.addssrc.length || this.removessrc.length)) return;
     if (!(this.peerconnection.signalingState == 'stable' && this.peerconnection.iceConnectionState == 'connected')) {
-        console.warn('addNewRemoteSSRC not yet', this.peerconnection.signalingState, this.peerconnection.iceConnectionState);
+        console.warn('modifySources not yet', this.peerconnection.signalingState, this.peerconnection.iceConnectionState);
         this.wait = true;
         window.setTimeout(function() { ob.modifySources(); }, 250);
         return;
@@ -781,7 +781,6 @@ JingleSession.prototype.modifySources = function() {
     this.removessrc = [];
 
     sdp.raw = sdp.session + sdp.media.join('');
-    console.warn(sdp.raw);
     this.peerconnection.setRemoteDescription(new RTCSessionDescription({type: 'offer', sdp: sdp.raw}),
         function() {
             console.log('modify ok');

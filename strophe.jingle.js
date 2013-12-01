@@ -136,6 +136,9 @@ Strophe.addConnectionPlugin('jingle', {
         case 'addsource': // FIXME: proprietary
             sess.addSource($(iq).find('>jingle>content'));
             break;
+        case 'removesource': // FIXME: proprietary
+            sess.removeSource($(iq).find('>jingle>content'));
+            break;
         default:
             console.warn('jingle action not implemented', action);
             break;
