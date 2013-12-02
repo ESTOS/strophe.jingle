@@ -576,6 +576,7 @@ SDPUtil = {
         candidate.port = elems[5];
         // elems[6] => "typ"
         candidate.type = elems[7];
+        candidate.generation = 0; // default value, may be overwritten below
         for (var i = 8; i < elems.length; i += 2) {
             switch (elems[i]) {
             case 'raddr':
