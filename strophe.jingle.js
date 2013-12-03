@@ -72,6 +72,7 @@ Strophe.addConnectionPlugin('jingle', {
             ack.c('error', {type: 'cancel'})
                .c('service-unavailable', {xmlns: 'urn:ietf:params:xml:ns:xmpp-stanzas'}).up();
             console.warn('duplicate session id', sid);
+            this.connection.send(ack);
             return true;
         }
         this.connection.send(ack);
