@@ -742,6 +742,7 @@ JingleSession.prototype.removeSource = function (elem) {
 JingleSession.prototype.modifySources = function() {
     var ob = this;
     if (!(this.addssrc.length || this.removessrc.length)) return;
+    if (this.peerconnection.signalingState == 'closed') return;
     if (!(this.peerconnection.signalingState == 'stable' && this.peerconnection.iceConnectionState == 'connected')) {
         console.warn('modifySources not yet', this.peerconnection.signalingState, this.peerconnection.iceConnectionState);
         this.wait = true;
