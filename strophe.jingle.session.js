@@ -661,6 +661,7 @@ JingleSession.prototype.sendTerminate = function (reason, text) {
 JingleSession.prototype.addSource = function (elem) {
     console.log('addssrc', new Date().getTime());
     console.log('ice', this.peerconnection.iceConnectionState);
+    var sdp = new SDP(this.peerconnection.remoteDescription.sdp);
 
     var ob = this;
     $(elem).each(function (idx, content) {
@@ -676,6 +677,22 @@ JingleSession.prototype.addSource = function (elem) {
                 lines += '\r\n';
             });
         });
+        console.log(name, lines);
+        sdp.media.forEach(function(media, idx) {
+            /*
+            // remove a=crypto lines
+            // FIXME: port this over to modifySources...
+            while(SDPUtil.find_line(sdp.media[idx], 'a=crypto:')) {
+                sdp.media[idx] = sdp.media[idx].replace(SDPUtil.find_line(sdp.media[idx], 'a=crypto:')+'\r\n', '');
+            }
+            */
+            if (!SDPUtil.find_line(media, 'a=mid:' + name))
+                return;
+            sdp.media[idx] += lines;
+            if (!ob.addssrc[idx]) ob.addssrc[idx] = '';
+            ob.addssrc[idx] += lines;
+        });
+        sdp.raw = sdp.session + sdp.media.join('');
     });
     this.modifySources();
 };
@@ -683,6 +700,7 @@ JingleSession.prototype.addSource = function (elem) {
 JingleSession.prototype.removeSource = function (elem) {
     console.log('removessrc', new Date().getTime());
     console.log('ice', this.peerconnection.iceConnectionState);
+    var sdp = new SDP(this.peerconnection.remoteDescription.sdp);
 
     var ob = this;
     $(elem).each(function (idx, content) {
@@ -698,6 +716,22 @@ JingleSession.prototype.removeSource = function (elem) {
                 lines += '\r\n';
             });
         });
+        console.log(name, lines);
+        sdp.media.forEach(function(media, idx) {
+            /*
+            // remove a=crypto lines
+            // FIXME: port this over to modifySources...
+            while(SDPUtil.find_line(sdp.media[idx], 'a=crypto:')) {
+                sdp.media[idx] = sdp.media[idx].replace(SDPUtil.find_line(sdp.media[idx], 'a=crypto:')+'\r\n', '');
+            }
+            */
+            if (!SDPUtil.find_line(media, 'a=mid:' + name))
+                return;
+            sdp.media[idx] += lines;
+            if (!ob.addssrc[idx]) ob.removessrc[idx] = '';
+            ob.removessrc[idx] += lines;
+        });
+        sdp.raw = sdp.session + sdp.media.join('');
     });
     console.log(this.removessrc);
     this.modifySources();
