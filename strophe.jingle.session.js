@@ -679,13 +679,6 @@ JingleSession.prototype.addSource = function (elem) {
         });
         console.log(name, lines);
         sdp.media.forEach(function(media, idx) {
-            /*
-            // remove a=crypto lines
-            // FIXME: port this over to modifySources...
-            while(SDPUtil.find_line(sdp.media[idx], 'a=crypto:')) {
-                sdp.media[idx] = sdp.media[idx].replace(SDPUtil.find_line(sdp.media[idx], 'a=crypto:')+'\r\n', '');
-            }
-            */
             if (!SDPUtil.find_line(media, 'a=mid:' + name))
                 return;
             sdp.media[idx] += lines;
@@ -718,13 +711,6 @@ JingleSession.prototype.removeSource = function (elem) {
         });
         console.log(name, lines);
         sdp.media.forEach(function(media, idx) {
-            /*
-            // remove a=crypto lines
-            // FIXME: port this over to modifySources...
-            while(SDPUtil.find_line(sdp.media[idx], 'a=crypto:')) {
-                sdp.media[idx] = sdp.media[idx].replace(SDPUtil.find_line(sdp.media[idx], 'a=crypto:')+'\r\n', '');
-            }
-            */
             if (!SDPUtil.find_line(media, 'a=mid:' + name))
                 return;
             sdp.media[idx] += lines;
@@ -757,13 +743,6 @@ JingleSession.prototype.modifySources = function() {
 
     console.log('ice', this.peerconnection.iceConnectionState);
     var sdp = new SDP(this.peerconnection.remoteDescription.sdp);
-    // mangle SDP a little... not sure if this is required anymore
-    if (SDPUtil.find_line(sdp.session, 'a=msid-semantic:')) {
-        sdp.session = sdp.session.replace(SDPUtil.find_line(sdp.session, 'a=msid-semantic:') + '\r\n', '');
-    }
-    sdp.media.forEach(function(media, idx) {
-        sdp.media[idx] = sdp.media[idx].replace('a=recvonly', 'a=sendrecv'); // WTF?
-    });
 
     // add sources
     this.addssrc.forEach(function(lines, idx) {
