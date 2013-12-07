@@ -34,6 +34,11 @@ function JingleSession(me, sid, connection) {
     this.statsinterval = null;
 
     this.reason = null;
+
+    this.addssrc = [];
+    this.removessrc = [];
+
+    this.wait = true;
 }
 
 JingleSession.prototype.initiate = function (peerjid, isInitiator) {
@@ -650,6 +655,123 @@ JingleSession.prototype.sendTerminate = function (reason, text) {
         window.clearInterval(this.statsinterval);
         this.statsinterval = null;
     }
+};
+
+
+JingleSession.prototype.addSource = function (elem) {
+    console.log('addssrc', new Date().getTime());
+    console.log('ice', this.peerconnection.iceConnectionState);
+
+    var ob = this;
+    $(elem).each(function (idx, content) {
+        var name = $(content).attr('name');
+        var lines = '';
+        tmp = $(content).find('>source[xmlns="urn:xmpp:jingle:apps:rtp:ssma:0"]');
+        tmp.each(function () {
+            var ssrc = $(this).attr('ssrc');
+            $(this).find('>parameter').each(function () {
+                lines += 'a=ssrc:' + ssrc + ' ' + $(this).attr('name');
+                if ($(this).attr('value') && $(this).attr('value').length)
+                    lines += ':' + $(this).attr('value');
+                lines += '\r\n';
+            });
+        });
+    });
+    this.modifySources();
+};
+
+JingleSession.prototype.removeSource = function (elem) {
+    console.log('removessrc', new Date().getTime());
+    console.log('ice', this.peerconnection.iceConnectionState);
+
+    var ob = this;
+    $(elem).each(function (idx, content) {
+        var name = $(content).attr('name');
+        var lines = '';
+        tmp = $(content).find('>source[xmlns="urn:xmpp:jingle:apps:rtp:ssma:0"]');
+        tmp.each(function () {
+            var ssrc = $(this).attr('ssrc');
+            $(this).find('>parameter').each(function () {
+                lines += 'a=ssrc:' + ssrc + ' ' + $(this).attr('name');
+                if ($(this).attr('value') && $(this).attr('value').length)
+                    lines += ':' + $(this).attr('value');
+                lines += '\r\n';
+            });
+        });
+    });
+    console.log(this.removessrc);
+    this.modifySources();
+};
+
+
+
+JingleSession.prototype.modifySources = function() {
+    var ob = this;
+    if (!(this.addssrc.length || this.removessrc.length)) return;
+    if (this.peerconnection.signalingState == 'closed') return;
+    if (!(this.peerconnection.signalingState == 'stable' && this.peerconnection.iceConnectionState == 'connected')) {
+        console.warn('modifySources not yet', this.peerconnection.signalingState, this.peerconnection.iceConnectionState);
+        this.wait = true;
+        window.setTimeout(function() { ob.modifySources(); }, 250);
+        return;
+    }
+    if (this.wait) {
+        window.setTimeout(function() { ob.modifySources(); }, 2500);
+        this.wait = false;
+        return;
+    }
+
+    console.log('ice', this.peerconnection.iceConnectionState);
+    var sdp = new SDP(this.peerconnection.remoteDescription.sdp);
+    // mangle SDP a little... not sure if this is required anymore
+    if (SDPUtil.find_line(sdp.session, 'a=msid-semantic:')) {
+        sdp.session = sdp.session.replace(SDPUtil.find_line(sdp.session, 'a=msid-semantic:') + '\r\n', '');
+    }
+    sdp.media.forEach(function(media, idx) {
+        sdp.media[idx] = sdp.media[idx].replace('a=recvonly', 'a=sendrecv'); // WTF?
+    });
+
+    // add sources
+    this.addssrc.forEach(function(lines, idx) {
+        sdp.media[idx] += lines;
+    });
+    this.addssrc = [];
+
+    // remove sources
+    this.removessrc.forEach(function(lines, idx) {
+        lines = lines.split('\r\n');
+        lines.pop(); // remove empty last element;
+        lines.forEach(function(line) {
+            sdp.media[idx] = sdp.media[idx].replace(line + '\r\n', '');
+        });
+    });
+    this.removessrc = [];
+
+    sdp.raw = sdp.session + sdp.media.join('');
+    this.peerconnection.setRemoteDescription(new RTCSessionDescription({type: 'offer', sdp: sdp.raw}),
+        function() {
+            console.log('modify ok');
+            ob.peerconnection.createAnswer(
+                function(modifiedAnswer) {
+                    console.log('modified answer...');
+                    ob.peerconnection.setLocalDescription(modifiedAnswer,
+                        function() {
+                            console.log('modified setLocalDescription ok');
+                        },
+                        function(error) {
+                            console.log('modified setLocalDescription failed');
+                        }
+                    );
+                },
+                function(error) {
+                    console.log('modified answer failed');
+                }
+            );
+        },
+        function(error) {
+            console.log('modify failed');
+        }
+    );
 };
 
 JingleSession.prototype.sendMute = function (muted, content) {
