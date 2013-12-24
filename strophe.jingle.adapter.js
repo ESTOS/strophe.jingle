@@ -3,10 +3,16 @@ function TraceablePeerConnection(ice_config, constraints) {
     var self = this;
     var RTCPeerconnection = webkitRTCPeerConnection || mozRTCPeerConnection;
     this.peerconnection = new RTCPeerconnection(ice_config, constraints);
+    this.updateLog = [];
 
     // override as desired
     this.trace = function(what, info) {
-        console.warn('WTRACE', what, info);
+        //console.warn('WTRACE', what, info);
+        self.updateLog.push({
+            time: new Date(),
+            type: what,
+            value: info
+        });
     };
     this.onicecandidate = null;
     this.peerconnection.onicecandidate = function (event) {
