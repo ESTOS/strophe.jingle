@@ -1,7 +1,7 @@
 /* jshint -W117 */
 function TraceablePeerConnection(ice_config, constraints) {
     var self = this;
-    var RTCPeerconnection = webkitRTCPeerConnection || mozRTCPeerConnection;
+    var RTCPeerconnection = navigator.mozGetUserMedia ? mozRTCPeerConnection : webkitRTCPeerConnection;
     this.peerconnection = new RTCPeerconnection(ice_config, constraints);
     this.updateLog = [];
 
