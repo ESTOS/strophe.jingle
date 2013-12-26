@@ -314,24 +314,22 @@ SDP.prototype.fromJingle = function (jingle) {
         't=0 0\r\n';
     // http://tools.ietf.org/html/draft-ietf-mmusic-sdp-bundle-negotiation-04#section-8
     if ($(jingle).find('>group[xmlns="urn:xmpp:jingle:apps:grouping:0"]').length) {
-        try {
         $(jingle).find('>group[xmlns="urn:xmpp:jingle:apps:grouping:0"]').each(function (idx, group) {
             var contents = $(group).find('>content').map(function (idx, content) {
-                return $(content).attr('name');
+                return content.getAttribute('name');
             }).get();
             if (contents.length > 0) {
-                obj.raw += 'a=group:' + ($(group).attr('semantics') || $(group).attr('type')) + ' ' + contents.join(' ') + '\r\n';
+                obj.raw += 'a=group:' + (group.getAttribute('semantics') || group.getAttribute('type')) + ' ' + contents.join(' ') + '\r\n';
             }
         });
-        } catch (e) { console.error(e.toString()); }
     } else if ($(jingle).find('>group[xmlns="urn:ietf:rfc:5888"]').length) {
         // temporary namespace, not to be used. to be removed soon.
         $(jingle).find('>group[xmlns="urn:ietf:rfc:5888"]').each(function (idx, group) {
             var contents = $(group).find('>content').map(function (idx, content) {
-                return $(content).attr('name');
+                return content.getAttribute('name');
             }).get();
-            if ($(group).attr('type') !== null && contents.length > 0) {
-                obj.raw += 'a=group:' + $(group).attr('type') + ' ' + contents.join(' ') + '\r\n';
+            if (group.getAttribute('type') !== null && contents.length > 0) {
+                obj.raw += 'a=group:' + group.getAttribute('type') + ' ' + contents.join(' ') + '\r\n';
             }
         });
     } else {
@@ -341,7 +339,7 @@ SDP.prototype.fromJingle = function (jingle) {
             //elem.c('bundle', {xmlns:'http://estos.de/ns/bundle'});
             return $(content).find('>bundle').length > 0;
         }).map(function (idx, content) {
-            return $(content).attr('name');
+            return content.getAttribute('name');
         }).get();
         if (bundle.length) {
             this.raw += 'a=group:BUNDLE ' + bundle.join(' ') + '\r\n';
@@ -384,7 +382,7 @@ SDP.prototype.jingle2media = function (content) {
     } else {
         tmp.proto = 'RTP/AVPF';
     }
-    tmp.fmt = desc.find('payload-type').map(function () { return $(this).attr('id'); }).get();
+    tmp.fmt = desc.find('payload-type').map(function () { return this.getAttribute('id'); }).get();
     media += SDPUtil.build_mline(tmp) + '\r\n';
     media += 'c=IN IP4 0.0.0.0\r\n';
     media += 'a=rtcp:1 IN IP4 0.0.0.0\r\n';
@@ -398,11 +396,11 @@ SDP.prototype.jingle2media = function (content) {
         }
         tmp.find('>fingerprint').each(function () {
             // FIXME: check namespace at some point
-            media += 'a=fingerprint:' + $(this).attr('hash');
+            media += 'a=fingerprint:' + this.getAttribute('hash');
             media += ' ' + $(this).text();
             media += '\r\n';
-            if ($(this).attr('setup')) {
-                media += 'a=setup:' + $(this).attr('setup') + '\r\n';
+            if (this.getAttribute('setup')) {
+                media += 'a=setup:' + this.getAttribute('setup') + '\r\n';
             }
         });
     }
@@ -431,11 +429,11 @@ SDP.prototype.jingle2media = function (content) {
 
     if (desc.find('encryption').length) {
         desc.find('encryption>crypto').each(function () {
-            media += 'a=crypto:' + $(this).attr('tag');
-            media += ' ' + $(this).attr('crypto-suite');
-            media += ' ' + $(this).attr('key-params');
-            if ($(this).attr('session-params')) {
-                media += ' ' + $(this).attr('session-params');
+            media += 'a=crypto:' + this.getAttribute('tag');
+            media += ' ' + this.getAttribute('crypto-suite');
+            media += ' ' + this.getAttribute('key-params');
+            if (this.getAttribute('session-params')) {
+                media += ' ' + this.getAttribute('session-params');
             }
             media += '\r\n';
         });
@@ -443,12 +441,12 @@ SDP.prototype.jingle2media = function (content) {
     desc.find('payload-type').each(function () {
         media += SDPUtil.build_rtpmap(this) + '\r\n';
         if ($(this).find('>parameter').length) {
-            media += 'a=fmtp:' + $(this).attr('id') + ' ';
-            media += $(this).find('parameter').map(function () { return ($(this).attr('name') ? ($(this).attr('name') + '=') : '') + $(this).attr('value'); }).get().join(';');
+            media += 'a=fmtp:' + this.getAttribute('id') + ' ';
+            media += $(this).find('parameter').map(function () { return (this.getAttribute('name') ? (this.getAttribute('name') + '=') : '') + this.getAttribute('value'); }).get().join(';');
             media += '\r\n';
         }
         // xep-0293
-        media += self.RtcpFbFromJingle($(this), $(this).attr('id'));
+        media += self.RtcpFbFromJingle($(this), this.getAttribute('id'));
     });
 
     // xep-0293
@@ -457,7 +455,7 @@ SDP.prototype.jingle2media = function (content) {
     // xep-0294
     tmp = desc.find('>rtp-hdrext[xmlns="urn:xmpp:jingle:apps:rtp:rtp-hdrext:0"]');
     tmp.each(function () {
-        media += 'a=extmap:' + $(this).attr('id') + ' ' + $(this).attr('uri') + '\r\n';
+        media += 'a=extmap:' + this.getAttribute('id') + ' ' + this.getAttribute('uri') + '\r\n';
     });
 
     content.find('>transport[xmlns="urn:xmpp:jingle:transports:ice-udp:1"]>candidate').each(function () {
@@ -466,11 +464,11 @@ SDP.prototype.jingle2media = function (content) {
 
     tmp = content.find('description>source[xmlns="urn:xmpp:jingle:apps:rtp:ssma:0"]');
     tmp.each(function () {
-        var ssrc = $(this).attr('ssrc');
+        var ssrc = this.getAttribute('ssrc');
         $(this).find('>parameter').each(function () {
-            media += 'a=ssrc:' + ssrc + ' ' + $(this).attr('name');
-            if ($(this).attr('value') && $(this).attr('value').length)
-                media += ':' + $(this).attr('value');
+            media += 'a=ssrc:' + ssrc + ' ' + this.getAttribute('name');
+            if (this.getAttribute('value') && this.getAttribute('value').length)
+                media += ':' + this.getAttribute('value');
             media += '\r\n';
         });
     });
