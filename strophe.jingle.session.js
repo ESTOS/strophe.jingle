@@ -183,8 +183,8 @@ JingleSession.prototype.active = function () {
 JingleSession.prototype.sendIceCandidate = function (candidate) {
     var ob = this;
     if (candidate && !this.lasticecandidate) {
-        var ice = SDPUtil.iceparams(this.localSDP.media[candidate.sdpMLineIndex], this.localSDP.session),
-            jcand = SDPUtil.candidateToJingle(candidate.candidate);
+        var ice = SDPUtil.iceparams(this.localSDP.media[candidate.sdpMLineIndex], this.localSDP.session);
+        var jcand = SDPUtil.candidateToJingle(candidate.candidate);
         if (!(ice && jcand)) {
             console.error('failed to get ice && jcand');
             return;
@@ -196,7 +196,6 @@ JingleSession.prototype.sendIceCandidate = function (candidate) {
         } else if (jcand.type === 'relay') {
             this.hadturncandidate = true;
         }
-        console.log(event.candidate, jcand);
 
         if (this.usetrickle) {
             if (this.usedrip) {
