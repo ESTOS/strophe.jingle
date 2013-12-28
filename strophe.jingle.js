@@ -147,7 +147,7 @@ Strophe.addConnectionPlugin('jingle', {
         return true;
     },
     initiate: function (peerjid, myjid) { // initiate a new jinglesession to peerjid
-        var sess = new JingleSession(myjid,
+        var sess = new JingleSession(myjid || this.connection.jid,
                                      Math.random().toString(36).substr(2, 12), // random string
                                      this.connection);
         // configure session
