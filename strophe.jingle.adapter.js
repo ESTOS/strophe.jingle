@@ -16,28 +16,39 @@ function TraceablePeerConnection(ice_config, constraints) {
     };
     this.onicecandidate = null;
     this.peerconnection.onicecandidate = function (event) {
+        self.trace('onicecandidate', event.candidate);
         if (self.onicecandidate !== null) {
             self.onicecandidate(event);
         }
     };
     this.onaddstream = null;
     this.peerconnection.onaddstream = function (event) {
+        self.trace('onaddstream', event.stream);
         if (self.onaddstream !== null) {
             self.onaddstream(event);
         }
     };
     this.onremovestream = null;
     this.peerconnection.onremovestream = function (event) {
+        self.trace('onremovestream', event.stream);
         if (self.onremovestream !== null) {
             self.onremovestream(event);
         }
     };
     this.onsignalingstatechange = null;
     this.peerconnection.onsignalingstatechange = function (event) {
+        self.trace('onsignalingstatechange', event);
         if (self.onsignalingstatechange !== null) {
             self.onsignalingstatechange(event);
         }
     };
+    this.oniceconnectionstatechange = null;
+    this.peerconnection.oniceconnectionstatechange = function (event) {
+        self.trace('oniceconnectionstatechange', event);
+        if (self.oniceconnectionstatechange !== null) {
+            self.oniceconnectionstatechange(event);
+        }
+    }
 };
 
 TraceablePeerConnection.prototype.__defineGetter__('signalingState', function() { return this.peerconnection.signalingState; });
