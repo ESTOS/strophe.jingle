@@ -53,11 +53,10 @@ JingleSession.prototype.initiate = function (peerjid, isInitiator) {
     this.initiator = isInitiator ? this.me : peerjid;
     this.responder = !isInitiator ? this.me : peerjid;
     this.peerjid = peerjid;
-    console.log('create PeerConnection ' + JSON.stringify(this.ice_config));
+    //console.log('create PeerConnection ' + JSON.stringify(this.ice_config));
     try {
         this.peerconnection = new RTCPeerconnection(this.ice_config,
                                                      this.pc_constraints);
-        console.log('Created RTCPeerConnnection');
     } catch (e) {
         console.error('Failed to create PeerConnection, exception: ',
                       e.message);
@@ -82,11 +81,9 @@ JingleSession.prototype.initiate = function (peerjid, isInitiator) {
     };
     this.peerconnection.onsignalingstatechange = function (event) {
         if (!(obj && obj.peerconnection)) return;
-        console.log('signallingstate ', obj.peerconnection.signalingState, event);
     };
     this.peerconnection.oniceconnectionstatechange = function (event) {
         if (!(obj && obj.peerconnection)) return;
-        console.log('iceconnectionstatechange', obj.peerconnection.iceConnectionState, event);
         switch (obj.peerconnection.iceConnectionState) {
         case 'connected':
             this.startTime = new Date();
@@ -158,7 +155,7 @@ JingleSession.prototype.accept = function () {
     }
     this.peerconnection.setLocalDescription(new RTCSessionDescription({type: 'answer', sdp: sdp}),
         function () {
-            console.log('setLocalDescription success');
+            //console.log('setLocalDescription success');
         },
         function (e) {
             console.error('setLocalDescription failed', e);
@@ -295,9 +292,9 @@ JingleSession.prototype.sendIceCandidate = function (candidate) {
             10000);
         }
     } else {
-        console.log('sendIceCandidate: last candidate.');
+        //console.log('sendIceCandidate: last candidate.');
         if (!this.usetrickle) {
-            console.log('should send full offer now...');
+            //console.log('should send full offer now...');
             var init = $iq({to: this.peerjid,
                        type: 'set'})
                 .c('jingle', {xmlns: 'urn:xmpp:jingle:1',
@@ -308,7 +305,7 @@ JingleSession.prototype.sendIceCandidate = function (candidate) {
             this.localSDP.toJingle(init, this.initiator == this.me ? 'initiator' : 'responder');
             this.connection.sendIQ(init,
                 function () {
-                    console.log('session initiate ack');
+                    //console.log('session initiate ack');
                     var ack = {};
                     ack.source = 'offer';
                     $(document).trigger('ack.jingle', [ob.sid, ack]);
@@ -336,7 +333,7 @@ JingleSession.prototype.sendIceCandidate = function (candidate) {
 };
 
 JingleSession.prototype.sendOffer = function () {
-    console.log('sendOffer...');
+    //console.log('sendOffer...');
     var ob = this;
     this.peerconnection.createOffer(function (sdp) {
             ob.createdOffer(sdp);
@@ -349,7 +346,7 @@ JingleSession.prototype.sendOffer = function () {
 };
 
 JingleSession.prototype.createdOffer = function (sdp) {
-    console.log('createdOffer', sdp);
+    //console.log('createdOffer', sdp);
     var ob = this;
     this.localSDP = new SDP(sdp.sdp);
     //this.localSDP.mangle();
@@ -380,8 +377,9 @@ JingleSession.prototype.createdOffer = function (sdp) {
         10000);
     }
     sdp.sdp = this.localSDP.raw;
-    this.peerconnection.setLocalDescription(sdp, function () {
-            console.log('setLocalDescription success');
+    this.peerconnection.setLocalDescription(sdp, 
+        function () {
+            //console.log('setLocalDescription success');
         },
         function (e) {
             console.error('setLocalDescription failed', e);
@@ -399,7 +397,7 @@ JingleSession.prototype.createdOffer = function (sdp) {
 };
 
 JingleSession.prototype.setRemoteDescription = function (elem, desctype) {
-    console.log('setting remote description... ', desctype);
+    //console.log('setting remote description... ', desctype);
     this.remoteSDP = new SDP('');
     this.remoteSDP.fromJingle(elem);
     if (this.peerconnection.remoteDescription !== null) {
@@ -433,7 +431,7 @@ JingleSession.prototype.setRemoteDescription = function (elem, desctype) {
     
     this.peerconnection.setRemoteDescription(remotedesc,
         function () {
-            console.log('setRemoteDescription success');
+            //console.log('setRemoteDescription success');
         },
         function (e) {
             console.error('setRemoteDescription error', e);
@@ -498,12 +496,17 @@ JingleSession.prototype.addIceCandidate = function (elem) {
         if (iscomplete) {
             console.log('setting pranswer');
             try {
-                this.peerconnection.setRemoteDescription(new RTCSessionDescription({type: 'pranswer', sdp: this.remoteSDP.raw }));
+                this.peerconnection.setRemoteDescription(new RTCSessionDescription({type: 'pranswer', sdp: this.remoteSDP.raw }),
+                    function() {
+                    },
+                    function(e) {
+                        console.log('setRemoteDescription pranswer failed', e.toString());
+                    });
             } catch (e) {
                 console.error('setting pranswer failed', e);
             }
         } else {
-            console.log('not yet setting pranswer');
+            //console.log('not yet setting pranswer');
         }
     }
     // operate on each content element
@@ -545,7 +548,7 @@ JingleSession.prototype.addIceCandidate = function (elem) {
 };
 
 JingleSession.prototype.sendAnswer = function (provisional) {
-    console.log('createAnswer', provisional);
+    //console.log('createAnswer', provisional);
     var ob = this;
     this.peerconnection.createAnswer(
         function (sdp) {
@@ -559,7 +562,7 @@ JingleSession.prototype.sendAnswer = function (provisional) {
 };
 
 JingleSession.prototype.createdAnswer = function (sdp, provisional) {
-    console.log('createAnswer callback');
+    //console.log('createAnswer callback');
     console.log(sdp);
     var ob = this;
     this.localSDP = new SDP(sdp.sdp);
@@ -601,7 +604,7 @@ JingleSession.prototype.createdAnswer = function (sdp, provisional) {
     sdp.sdp = this.localSDP.raw;
     this.peerconnection.setLocalDescription(sdp,
         function () {
-            console.log('setLocalDescription success');
+            //console.log('setLocalDescription success');
         },
         function (e) {
             console.error('setLocalDescription failed', e);
@@ -676,7 +679,6 @@ JingleSession.prototype.addSource = function (elem) {
                 lines += '\r\n';
             });
         });
-        console.log(name, lines);
         sdp.media.forEach(function(media, idx) {
             if (!SDPUtil.find_line(media, 'a=mid:' + name))
                 return;
@@ -708,7 +710,6 @@ JingleSession.prototype.removeSource = function (elem) {
                 lines += '\r\n';
             });
         });
-        console.log(name, lines);
         sdp.media.forEach(function(media, idx) {
             if (!SDPUtil.find_line(media, 'a=mid:' + name))
                 return;
@@ -718,11 +719,8 @@ JingleSession.prototype.removeSource = function (elem) {
         });
         sdp.raw = sdp.session + sdp.media.join('');
     });
-    console.log(this.removessrc);
     this.modifySources();
 };
-
-
 
 JingleSession.prototype.modifySources = function() {
     var ob = this;
@@ -740,7 +738,6 @@ JingleSession.prototype.modifySources = function() {
         return;
     }
 
-    console.log('ice', this.peerconnection.iceConnectionState);
     var sdp = new SDP(this.peerconnection.remoteDescription.sdp);
 
     // add sources
@@ -762,13 +759,11 @@ JingleSession.prototype.modifySources = function() {
     sdp.raw = sdp.session + sdp.media.join('');
     this.peerconnection.setRemoteDescription(new RTCSessionDescription({type: 'offer', sdp: sdp.raw}),
         function() {
-            console.log('modify ok');
             ob.peerconnection.createAnswer(
                 function(modifiedAnswer) {
-                    console.log('modified answer...');
                     ob.peerconnection.setLocalDescription(modifiedAnswer,
                         function() {
-                            console.log('modified setLocalDescription ok');
+                            //console.log('modified setLocalDescription ok');
                         },
                         function(error) {
                             console.log('modified setLocalDescription failed');
