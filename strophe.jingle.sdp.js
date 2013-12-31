@@ -42,10 +42,10 @@ SDP.prototype.mangle = function () {
 
 // remove lines matching prefix from session section
 SDP.prototype.removeSessionLines = function(prefix) {
-    var ob = this;
+    var self = this;
     var lines = SDPUtil.find_lines(this.session, prefix);
     lines.forEach(function(line) {
-        ob.session = ob.session.replace(line + '\r\n', '');
+        self.session = self.session.replace(line + '\r\n', '');
     });
     this.raw = this.session + this.media.join('');
     return lines;
@@ -53,10 +53,10 @@ SDP.prototype.removeSessionLines = function(prefix) {
 // remove lines matching prefix from a media section specified by mediaindex
 // TODO: non-numeric mediaindex could match mid
 SDP.prototype.removeMediaLines = function(mediaindex, prefix) {
-    var ob = this;
+    var self = this;
     var lines = SDPUtil.find_lines(this.media[mediaindex], prefix);
     lines.forEach(function(line) {
-        ob.media[mediaindex] = ob.media[mediaindex].replace(line + '\r\n', '');
+        self.media[mediaindex] = self.media[mediaindex].replace(line + '\r\n', '');
     });
     this.raw = this.session + this.media.join('');
     return lines;
@@ -65,7 +65,7 @@ SDP.prototype.removeMediaLines = function(mediaindex, prefix) {
 // add content's to a jingle element
 SDP.prototype.toJingle = function (elem, thecreator) {
     var i, j, k, mline, ssrc, rtpmap, tmp, line, lines;
-    var ob = this;
+    var self = this;
     // new bundle plan
     if (SDPUtil.find_line(this.session, 'a=group:')) {
         lines = SDPUtil.find_lines(this.session, 'a=group:');
@@ -241,7 +241,7 @@ SDP.prototype.toJingle = function (elem, thecreator) {
 SDP.prototype.TransportToJingle = function (mediaindex, elem) {
     var i = mediaindex;
     var tmp;
-    var ob = this;
+    var self = this;
     elem.c('transport');
 
     // XEP-0320
@@ -252,7 +252,7 @@ SDP.prototype.TransportToJingle = function (mediaindex, elem) {
         // tmp.xmlns = 'urn:xmpp:jingle:apps:dtls:0'; -- FIXME: update receivers first
         elem.c('fingerprint').t(tmp.fingerprint);
         delete tmp.fingerprint;
-        line = SDPUtil.find_line(ob.media[mediaindex], 'a=setup:', ob.session);
+        line = SDPUtil.find_line(self.media[mediaindex], 'a=setup:', self.session);
         if (line) {
             tmp.setup = line.substr(8);
         }
@@ -316,7 +316,7 @@ SDP.prototype.RtcpFbFromJingle = function (elem, payloadtype) { // XEP-0293
 
 // construct an SDP from a jingle stanza
 SDP.prototype.fromJingle = function (jingle) {
-    var obj = this;
+    var self = this;
     this.raw = 'v=0\r\n' +
         'o=- ' + '1923518516' + ' 2 IN IP4 0.0.0.0\r\n' +// FIXME
         's=-\r\n' +
@@ -328,7 +328,7 @@ SDP.prototype.fromJingle = function (jingle) {
                 return content.getAttribute('name');
             }).get();
             if (contents.length > 0) {
-                obj.raw += 'a=group:' + (group.getAttribute('semantics') || group.getAttribute('type')) + ' ' + contents.join(' ') + '\r\n';
+                self.raw += 'a=group:' + (group.getAttribute('semantics') || group.getAttribute('type')) + ' ' + contents.join(' ') + '\r\n';
             }
         });
     } else if ($(jingle).find('>group[xmlns="urn:ietf:rfc:5888"]').length) {
@@ -338,7 +338,7 @@ SDP.prototype.fromJingle = function (jingle) {
                 return content.getAttribute('name');
             }).get();
             if (group.getAttribute('type') !== null && contents.length > 0) {
-                obj.raw += 'a=group:' + group.getAttribute('type') + ' ' + contents.join(' ') + '\r\n';
+                self.raw += 'a=group:' + group.getAttribute('type') + ' ' + contents.join(' ') + '\r\n';
             }
         });
     } else {
@@ -357,8 +357,8 @@ SDP.prototype.fromJingle = function (jingle) {
 
     this.session = this.raw;
     jingle.find('>content').each(function () {
-        var m = obj.jingle2media($(this));
-        obj.media.push(m);
+        var m = self.jingle2media($(this));
+        self.media.push(m);
     });
 
     // reconstruct msid-semantic -- apparently not necessary
