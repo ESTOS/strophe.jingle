@@ -104,6 +104,7 @@ Strophe.addConnectionPlugin('jingle', {
         case 'session-accept':
             sess.setRemoteDescription($(iq).find('>jingle'), 'answer');
             sess.accept();
+            $(document).trigger('callaccepted.jingle', [sess.sid]);
             break;
         case 'session-terminate':
             console.log('terminating...');
