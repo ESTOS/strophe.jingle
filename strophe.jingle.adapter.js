@@ -48,6 +48,20 @@ function TraceablePeerConnection(ice_config, constraints) {
         if (self.oniceconnectionstatechange !== null) {
             self.oniceconnectionstatechange(event);
         }
+    };
+    this.onnegotiationneeded = null;
+    this.peerconnection.onnegotiationneeded = function (event) {
+        self.trace('onnegotiationneeded', event);
+        if (self.onnegotiationneeded !== null) {
+            self.onnegotiationneeded(event);
+        }
+    };
+    self.ondatachannel = null;
+    this.peerconnection.ondatachannel = function (event) {
+        self.trace('ondatachannel', event);
+        if (self.ondatachannel !== null) {
+            self.ondatachannel(event);
+        }
     }
 };
 
@@ -65,6 +79,11 @@ TraceablePeerConnection.prototype.removeStream = function (stream) {
     this.trace('removeStream', stream);
     this.peerconnection.removeStream(stream);
 };
+
+TraceablePeerConnection.prototype.createDataChannel = function (label, opts) {
+    this.trace('createDataChannel', label, opts);
+    this.peerconnection.createDataChannel(label, opts);
+}
 
 TraceablePeerConnection.prototype.setLocalDescription = function (description, successCallback, failureCallback) {
     var self = this;
