@@ -11,47 +11,47 @@ function TraceablePeerConnection(ice_config, constraints) {
         self.updateLog.push({
             time: new Date(),
             type: what,
-            value: info
+            value: info || ""
         });
     };
     this.onicecandidate = null;
     this.peerconnection.onicecandidate = function (event) {
-        self.trace('onicecandidate', event.candidate);
+        self.trace('onicecandidate', JSON.stringify(event.candidate, null, ' '));
         if (self.onicecandidate !== null) {
             self.onicecandidate(event);
         }
     };
     this.onaddstream = null;
     this.peerconnection.onaddstream = function (event) {
-        self.trace('onaddstream', event.stream);
+        self.trace('onaddstream', event.stream.id);
         if (self.onaddstream !== null) {
             self.onaddstream(event);
         }
     };
     this.onremovestream = null;
     this.peerconnection.onremovestream = function (event) {
-        self.trace('onremovestream', event.stream);
+        self.trace('onremovestream', event.stream.id);
         if (self.onremovestream !== null) {
             self.onremovestream(event);
         }
     };
     this.onsignalingstatechange = null;
     this.peerconnection.onsignalingstatechange = function (event) {
-        self.trace('onsignalingstatechange', event);
+        self.trace('onsignalingstatechange', event.srcElement.signalingState);
         if (self.onsignalingstatechange !== null) {
             self.onsignalingstatechange(event);
         }
     };
     this.oniceconnectionstatechange = null;
     this.peerconnection.oniceconnectionstatechange = function (event) {
-        self.trace('oniceconnectionstatechange', event);
+        self.trace('oniceconnectionstatechange', event.srcElement.iceConnectionState);
         if (self.oniceconnectionstatechange !== null) {
             self.oniceconnectionstatechange(event);
         }
     };
     this.onnegotiationneeded = null;
     this.peerconnection.onnegotiationneeded = function (event) {
-        self.trace('onnegotiationneeded', event);
+        self.trace('onnegotiationneeded');
         if (self.onnegotiationneeded !== null) {
             self.onnegotiationneeded(event);
         }
@@ -65,18 +65,22 @@ function TraceablePeerConnection(ice_config, constraints) {
     }
 };
 
+dumpSDP = function(description) {
+    return 'type: ' + description.type + '\r\n' + description.sdp;
+}
+
 TraceablePeerConnection.prototype.__defineGetter__('signalingState', function() { return this.peerconnection.signalingState; });
 TraceablePeerConnection.prototype.__defineGetter__('iceConnectionState', function() { return this.peerconnection.iceConnectionState; });
 TraceablePeerConnection.prototype.__defineGetter__('localDescription', function() { return this.peerconnection.localDescription; });
 TraceablePeerConnection.prototype.__defineGetter__('remoteDescription', function() { return this.peerconnection.remoteDescription; });
 
 TraceablePeerConnection.prototype.addStream = function (stream) {
-    this.trace('addStream', stream);
+    this.trace('addStream', stream.id);
     this.peerconnection.addStream(stream);
 };
 
 TraceablePeerConnection.prototype.removeStream = function (stream) {
-    this.trace('removeStream', stream);
+    this.trace('removeStream', stream.id);
     this.peerconnection.removeStream(stream);
 };
 
@@ -87,7 +91,7 @@ TraceablePeerConnection.prototype.createDataChannel = function (label, opts) {
 
 TraceablePeerConnection.prototype.setLocalDescription = function (description, successCallback, failureCallback) {
     var self = this;
-    this.trace('setLocalDescription', description);
+    this.trace('setLocalDescription', dumpSDP(description));
     this.peerconnection.setLocalDescription(description, 
         function () {
             self.trace('setLocalDescriptionOnSuccess');
@@ -102,7 +106,7 @@ TraceablePeerConnection.prototype.setLocalDescription = function (description, s
 
 TraceablePeerConnection.prototype.setRemoteDescription = function (description, successCallback, failureCallback) {
     var self = this;
-    this.trace('setRemoteDescription', description);
+    this.trace('setRemoteDescription', dumpSDP(description));
     this.peerconnection.setRemoteDescription(description, 
         function () {
             self.trace('setRemoteDescriptionOnSuccess');
@@ -122,11 +126,11 @@ TraceablePeerConnection.prototype.close = function () {
 
 TraceablePeerConnection.prototype.createOffer = function (successCallback, failureCallback, constraints) {
     var self = this;
-    this.trace('createOffer', constraints);
+    this.trace('createOffer', JSON.stringify(constraints, null, ' '));
     this.peerconnection.createOffer(
-        function (sdp) {
-            self.trace('createOfferOnSuccess', sdp);
-            successCallback(sdp);
+        function (offer) {
+            self.trace('createOfferOnSuccess', dumpSDP(offer));
+            successCallback(offer);
         },
         function(err) {
             self.trace('createOfferOnFailure', err);
@@ -138,11 +142,11 @@ TraceablePeerConnection.prototype.createOffer = function (successCallback, failu
 
 TraceablePeerConnection.prototype.createAnswer = function (successCallback, failureCallback, constraints) {
     var self = this;
-    this.trace('createAnswer', constraints);
+    this.trace('createAnswer', JSON.stringify(constraints, null, ' '));
     this.peerconnection.createAnswer(
-        function (sdp) {
-            self.trace('createAnswerOnSuccess', sdp);
-            successCallback(sdp);
+        function (answer) {
+            self.trace('createAnswerOnSuccess', dumpSDP(answer));
+            successCallback(answer);
         },
         function(err) {
             self.trace('createAnswerOnFailure', err);
@@ -154,7 +158,7 @@ TraceablePeerConnection.prototype.createAnswer = function (successCallback, fail
 
 TraceablePeerConnection.prototype.addIceCandidate = function (candidate, successCallback, failureCallback) {
     var self = this;
-    this.trace('addIceCandidate', candidate);
+    this.trace('addIceCandidate', JSON.stringify(candidate, null, ' '));
     this.peerconnection.addIceCandidate(candidate);
     /* maybe later
     this.peerconnection.addIceCandidate(candidate, 
