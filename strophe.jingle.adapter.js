@@ -4,6 +4,9 @@ function TraceablePeerConnection(ice_config, constraints) {
     var RTCPeerconnection = navigator.mozGetUserMedia ? mozRTCPeerConnection : webkitRTCPeerConnection;
     this.peerconnection = new RTCPeerconnection(ice_config, constraints);
     this.updateLog = [];
+    this.stats = {};
+    this.statsinterval = null;
+    this.maxstats = 300; // limit to 300 values, i.e. 5 minutes; set to 0 to disable
 
     // override as desired
     this.trace = function(what, info) {
@@ -63,6 +66,31 @@ function TraceablePeerConnection(ice_config, constraints) {
             self.ondatachannel(event);
         }
     }
+    this.statsinterval = window.setInterval(function() {
+        self.peerconnection.getStats(function(stats) {
+            var results = stats.result();
+            for (var i = 0; i < results.length; ++i) {
+                //console.log(results[i].type, results[i].id, results[i].names())
+                var now = new Date();
+                results[i].names().forEach(function (name) {
+                    var id = results[i].id + '-' + name;
+                    if (!self.stats[id]) {
+                        self.stats[id] = {
+                            startTime: now,
+                            endTime: now,
+                            values: []
+                        };
+                    }
+                    self.stats[id].values.push(results[i].stat(name));
+                    if (self.stats[id].values.length > self.maxstats) {
+                        self.stats[id].values.shift();
+                    }
+                    self.stats[id].endTime = now;
+                });
+            }
+        });
+
+    }, 1000);
 };
 
 dumpSDP = function(description) {
@@ -102,6 +130,10 @@ TraceablePeerConnection.prototype.setLocalDescription = function (description, s
             failureCallback(err);
         }
     );
+    if (this.statsinterval === null && this.maxstats > 0) {
+        // start gathering stats
+        this.statsinterval = window.setInterval(this.dumpStats, 1000);
+    }
 };
 
 TraceablePeerConnection.prototype.setRemoteDescription = function (description, successCallback, failureCallback) {
@@ -117,10 +149,18 @@ TraceablePeerConnection.prototype.setRemoteDescription = function (description, 
             failureCallback(err);
         }
     );
+    if (this.statsinterval === null && this.maxstats > 0) {
+        // start gathering stats
+        this.statsinterval = window.setInterval(this.dumpStats, 1000);
+    }
 };
 
 TraceablePeerConnection.prototype.close = function () {
     this.trace('stop');
+    if (this.statsinterval !== null) {
+        window.clearInterval(this.statsinterval);
+        this.statsinterval = null;
+    }
     this.peerconnection.close();
 };
 
@@ -178,6 +218,29 @@ TraceablePeerConnection.prototype.getStats = function(callback) {
     this.peerconnection.getStats(callback);
 };
 
+TraceablePeerConnection.prototype.dumpStats = function(stats) {
+    var self = this;
+    var results = stats.result();
+    for (var i = 0; i < results.length; ++i) {
+        //console.log(results[i].type, results[i].id, results[i].names())
+        var now = new Date();
+        results[i].names().forEach(function (name) {
+            var id = results[i].id + '-' + name;
+            if (!self.stats[id]) {
+                self.stats[id] = {
+                    startTime: now,
+                    endTime: now,
+                    values: []
+                };
+            }
+            self.stats[id].values.push(results[i].stat(name));
+            if (self.stats[id].values.length > self.maxstats) {
+                self.stats[id].values.shift();
+            }
+            self.stats[id].endTime = now;
+        });
+    }
+};
 
 // mozilla chrome compat layer -- very similar to adapter.js
 function setupRTC() {
