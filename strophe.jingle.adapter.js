@@ -78,12 +78,15 @@ function TraceablePeerConnection(ice_config, constraints) {
                         self.stats[id] = {
                             startTime: now,
                             endTime: now,
-                            values: []
+                            values: [],
+                            times: []
                         };
                     }
                     self.stats[id].values.push(results[i].stat(name));
+                    self.stats[id].times.push(now.getTime());
                     if (self.stats[id].values.length > self.maxstats) {
                         self.stats[id].values.shift();
+                        self.stats[id].times.shift();
                     }
                     self.stats[id].endTime = now;
                 });
