@@ -20,7 +20,7 @@ function JingleSession(me, sid, connection) {
     this.stopTime = null;
     this.media_constraints = null;
     this.pc_constraints = null;
-    this.ice_config = {},
+    this.ice_config = {};
     this.drip_container = [];
 
     this.usetrickle = true;
@@ -156,6 +156,7 @@ JingleSession.prototype.accept = function () {
     this.peerconnection.setLocalDescription(new RTCSessionDescription({type: 'answer', sdp: sdp}),
         function () {
             //console.log('setLocalDescription success');
+            $(document).trigger('setLocalDescription.jingle', [self.sid]);
         },
         function (e) {
             console.error('setLocalDescription failed', e);
@@ -379,6 +380,7 @@ JingleSession.prototype.createdOffer = function (sdp) {
     sdp.sdp = this.localSDP.raw;
     this.peerconnection.setLocalDescription(sdp, 
         function () {
+            $(document).trigger('setLocalDescription.jingle', [self.sid]);
             //console.log('setLocalDescription success');
         },
         function (e) {
@@ -563,7 +565,6 @@ JingleSession.prototype.sendAnswer = function (provisional) {
 
 JingleSession.prototype.createdAnswer = function (sdp, provisional) {
     //console.log('createAnswer callback');
-    console.log(sdp);
     var self = this;
     this.localSDP = new SDP(sdp.sdp);
     //this.localSDP.mangle();
@@ -604,6 +605,7 @@ JingleSession.prototype.createdAnswer = function (sdp, provisional) {
     sdp.sdp = this.localSDP.raw;
     this.peerconnection.setLocalDescription(sdp,
         function () {
+            $(document).trigger('setLocalDescription.jingle', [self.sid]);
             //console.log('setLocalDescription success');
         },
         function (e) {
@@ -764,6 +766,7 @@ JingleSession.prototype.modifySources = function() {
                     self.peerconnection.setLocalDescription(modifiedAnswer,
                         function() {
                             //console.log('modified setLocalDescription ok');
+                            $(document).trigger('setLocalDescription.jingle', [self.sid]);
                         },
                         function(error) {
                             console.log('modified setLocalDescription failed');
