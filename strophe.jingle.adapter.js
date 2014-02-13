@@ -66,34 +66,36 @@ function TraceablePeerConnection(ice_config, constraints) {
             self.ondatachannel(event);
         }
     }
-    this.statsinterval = window.setInterval(function() {
-        self.peerconnection.getStats(function(stats) {
-            var results = stats.result();
-            for (var i = 0; i < results.length; ++i) {
-                //console.log(results[i].type, results[i].id, results[i].names())
-                var now = new Date();
-                results[i].names().forEach(function (name) {
-                    var id = results[i].id + '-' + name;
-                    if (!self.stats[id]) {
-                        self.stats[id] = {
-                            startTime: now,
-                            endTime: now,
-                            values: [],
-                            times: []
-                        };
-                    }
-                    self.stats[id].values.push(results[i].stat(name));
-                    self.stats[id].times.push(now.getTime());
-                    if (self.stats[id].values.length > self.maxstats) {
-                        self.stats[id].values.shift();
-                        self.stats[id].times.shift();
-                    }
-                    self.stats[id].endTime = now;
-                });
-            }
-        });
+    if (!navigator.mozGetUserMedia) {
+        this.statsinterval = window.setInterval(function() {
+            self.peerconnection.getStats(function(stats) {
+                var results = stats.result();
+                for (var i = 0; i < results.length; ++i) {
+                    //console.log(results[i].type, results[i].id, results[i].names())
+                    var now = new Date();
+                    results[i].names().forEach(function (name) {
+                        var id = results[i].id + '-' + name;
+                        if (!self.stats[id]) {
+                            self.stats[id] = {
+                                startTime: now,
+                                endTime: now,
+                                values: [],
+                                times: []
+                            };
+                        }
+                        self.stats[id].values.push(results[i].stat(name));
+                        self.stats[id].times.push(now.getTime());
+                        if (self.stats[id].values.length > self.maxstats) {
+                            self.stats[id].values.shift();
+                            self.stats[id].times.shift();
+                        }
+                        self.stats[id].endTime = now;
+                    });
+                }
+            });
 
-    }, 1000);
+        }, 1000);
+    }
 };
 
 dumpSDP = function(description) {
@@ -133,10 +135,11 @@ TraceablePeerConnection.prototype.setLocalDescription = function (description, s
             failureCallback(err);
         }
     );
+    /*
     if (this.statsinterval === null && this.maxstats > 0) {
         // start gathering stats
-        this.statsinterval = window.setInterval(this.dumpStats, 1000);
     }
+    */
 };
 
 TraceablePeerConnection.prototype.setRemoteDescription = function (description, successCallback, failureCallback) {
@@ -152,10 +155,11 @@ TraceablePeerConnection.prototype.setRemoteDescription = function (description, 
             failureCallback(err);
         }
     );
+    /*
     if (this.statsinterval === null && this.maxstats > 0) {
         // start gathering stats
-        this.statsinterval = window.setInterval(this.dumpStats, 1000);
     }
+    */
 };
 
 TraceablePeerConnection.prototype.close = function () {
@@ -217,31 +221,11 @@ TraceablePeerConnection.prototype.addIceCandidate = function (candidate, success
     */
 };
 
-TraceablePeerConnection.prototype.getStats = function(callback) {
-    this.peerconnection.getStats(callback);
-};
-
-TraceablePeerConnection.prototype.dumpStats = function(stats) {
-    var self = this;
-    var results = stats.result();
-    for (var i = 0; i < results.length; ++i) {
-        //console.log(results[i].type, results[i].id, results[i].names())
-        var now = new Date();
-        results[i].names().forEach(function (name) {
-            var id = results[i].id + '-' + name;
-            if (!self.stats[id]) {
-                self.stats[id] = {
-                    startTime: now,
-                    endTime: now,
-                    values: []
-                };
-            }
-            self.stats[id].values.push(results[i].stat(name));
-            if (self.stats[id].values.length > self.maxstats) {
-                self.stats[id].values.shift();
-            }
-            self.stats[id].endTime = now;
-        });
+TraceablePeerConnection.prototype.getStats = function(callback, errback) {
+    if (navigator.mozGetUserMedia) {
+        // ignore for now...
+    } else {
+        this.peerconnection.getStats(callback);
     }
 };
 
