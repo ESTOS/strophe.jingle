@@ -72,15 +72,7 @@ SDP.prototype.toJingle = function (elem, thecreator) {
         for (i = 0; i < lines.length; i++) {
             tmp = lines[i].split(' ');
             var semantics = tmp.shift().substr(8);
-            // new plan
-            elem.c('group', {xmlns: 'urn:xmpp:jingle:apps:grouping:0', type: semantics, semantics:semantics});
-            for (j = 0; j < tmp.length; j++) {
-                elem.c('content', {name: tmp[j]}).up();
-            }
-            elem.up();
-
-            // temporary plan, to be removed
-            elem.c('group', {xmlns: 'urn:ietf:rfc:5888', type: semantics});
+            elem.c('group', {xmlns: 'urn:xmpp:jingle:apps:grouping:0', semantics:semantics});
             for (j = 0; j < tmp.length; j++) {
                 elem.c('content', {name: tmp[j]}).up();
             }
