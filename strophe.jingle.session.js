@@ -37,6 +37,7 @@ function JingleSession(me, sid, connection) {
 
     this.addssrc = [];
     this.removessrc = [];
+    this.pendingop = null;
 
     this.wait = true;
 }
@@ -726,8 +727,8 @@ JingleSession.prototype.removeSource = function (elem) {
 
 JingleSession.prototype.modifySources = function() {
     var self = this;
-    if (!(this.addssrc.length || this.removessrc.length)) return;
     if (this.peerconnection.signalingState == 'closed') return;
+    if (!(this.addssrc.length || this.removessrc.length || this.pendingop !== null)) return;
     if (!(this.peerconnection.signalingState == 'stable' && this.peerconnection.iceConnectionState == 'connected')) {
         console.warn('modifySources not yet', this.peerconnection.signalingState, this.peerconnection.iceConnectionState);
         this.wait = true;
@@ -763,6 +764,24 @@ JingleSession.prototype.modifySources = function() {
         function() {
             self.peerconnection.createAnswer(
                 function(modifiedAnswer) {
+                    // change video direction, see https://github.com/jitsi/jitmeet/issues/41
+                    if (self.pendingop !== null) {
+                        var sdp = new SDP(modifiedAnswer.sdp);
+                        if (sdp.media.length > 1) {
+                            switch(self.pendingop) {
+                            case 'mute':
+                                sdp.media[1] = sdp.media[1].replace('a=sendrecv', 'a=recvonly');
+                                break;
+                            case 'unmute':
+                                sdp.media[1] = sdp.media[1].replace('a=recvonly', 'a=sendrecv');
+                                break;
+                            }
+                            sdp.raw = sdp.session + sdp.media.join('');
+                            modifiedAnswer.sdp = sdp.raw;
+                        }
+                        self.pendingop = null;
+                    }
+
                     self.peerconnection.setLocalDescription(modifiedAnswer,
                         function() {
                             //console.log('modified setLocalDescription ok');
@@ -782,6 +801,13 @@ JingleSession.prototype.modifySources = function() {
             console.log('modify failed');
         }
     );
+};
+
+// SDP-based mute by going recvonly/sendrecv
+// FIXME: should probably black out the screen as well
+JingleSession.prototype.hardMuteVideo = function (muted) {
+    this.pendingop = muted ? 'mute' : 'unmute';
+    this.modifySources();
 };
 
 JingleSession.prototype.sendMute = function (muted, content) {
