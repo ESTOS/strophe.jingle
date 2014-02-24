@@ -808,6 +808,10 @@ JingleSession.prototype.modifySources = function() {
 JingleSession.prototype.hardMuteVideo = function (muted) {
     this.pendingop = muted ? 'mute' : 'unmute';
     this.modifySources();
+
+    this.localStream.getVideoTracks.forEach(function (track)) {
+        track.enabled = !muted;
+    });
 };
 
 JingleSession.prototype.sendMute = function (muted, content) {
