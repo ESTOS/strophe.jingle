@@ -23,7 +23,7 @@ JingleSession = function(me, sid, connection) {
     this.stopTime = null;
     this.media_constraints = null;
     this.pc_constraints = null;
-    this.ice_config = {},
+    this.ice_config = {};
     this.drip_container = [];
 
     this.usetrickle = true;
@@ -40,6 +40,7 @@ JingleSession = function(me, sid, connection) {
 
     this.addssrc = [];
     this.removessrc = [];
+    this.pendingop = null;
 
     this.wait = true;
 }
@@ -159,6 +160,7 @@ JingleSession.prototype.accept = function () {
     this.peerconnection.setLocalDescription(new RTCSessionDescription({type: 'answer', sdp: sdp}),
         function () {
             //console.log('setLocalDescription success');
+            $(document).trigger('setLocalDescription.jingle', [self.sid]);
         },
         function (e) {
             console.error('setLocalDescription failed', e);
@@ -200,99 +202,19 @@ JingleSession.prototype.sendIceCandidate = function (candidate) {
         if (this.usetrickle) {
             if (this.usedrip) {
                 if (this.drip_container.length === 0) {
-                    // start 10ms callout
+                    // start 20ms callout
                     window.setTimeout(function () {
                         if (self.drip_container.length === 0) return;
-                        var allcands = self.drip_container;
+                        self.sendIceCandidates(self.drip_container);
                         self.drip_container = [];
-                        var cand = $iq({to: self.peerjid, type: 'set'})
-                            .c('jingle', {xmlns: 'urn:xmpp:jingle:1',
-                               action: 'transport-info',
-                               initiator: self.initiator,
-                               sid: self.sid});
-                        for (var mid = 0; mid < self.localSDP.media.length; mid++) {
-                            var cands = allcands.filter(function (el) { return el.sdpMLineIndex == mid; });
-                            if (cands.length > 0) {
-                                var ice = SDPUtil.iceparams(self.localSDP.media[mid], self.localSDP.session);
-                                ice.xmlns = 'urn:xmpp:jingle:transports:ice-udp:1';
-                                cand.c('content', {creator: self.initiator == self.me ? 'initiator' : 'responder',
-                                       name: cands[0].sdpMid
-                                }).c('transport', ice);
-                                for (var i = 0; i < cands.length; i++) {
-                                    cand.c('candidate', SDPUtil.candidateToJingle(cands[i].candidate)).up();
-                                }
-                                // add fingerprint
-                                if (SDPUtil.find_line(self.localSDP.media[mid], 'a=fingerprint:', self.localSDP.session)) {
-                                    var tmp = SDPUtil.parse_fingerprint(SDPUtil.find_line(self.localSDP.media[mid], 'a=fingerprint:', self.localSDP.session));
-                                    tmp.required = true;
-                                    cand.c('fingerprint').t(tmp.fingerprint);
-                                    delete tmp.fingerprint;
-                                    cand.attrs(tmp);
-                                    cand.up();
-                                }
-                                cand.up(); // transport
-                                cand.up(); // content
-                            }
-                        }
-                        // might merge last-candidate notification into this, but it is called alot later. See webrtc issue #2340
-                        //console.log('was this the last candidate', self.lasticecandidate);
-                        self.connection.sendIQ(cand,
-                            function () {
-                                var ack = {};
-                                ack.source = 'transportinfo';
-                                $(document).trigger('ack.jingle', [self.sid, ack]);
-                            },
-                            function (stanza) {
-                                var error = ($(stanza).find('error').length) ? {
-                                    code: $(stanza).find('error').attr('code'),
-                                    reason: $(stanza).find('error :first')[0].tagName,
-                                }:{};
-                                error.source = 'transportinfo';
-                                $(document).trigger('error.jingle', [self.sid, error]);
-                            },
-                        10000);
-                    }, 10);
+                    }, 20);
+
                 }
                 this.drip_container.push(event.candidate);
                 return;
+            } else {
+                self.sendIceCandidate([event.candidate]);
             }
-            // map to transport-info
-            var cand = $iq({to: this.peerjid, type: 'set'})
-                .c('jingle', {xmlns: 'urn:xmpp:jingle:1',
-                        action: 'transport-info',
-                        initiator: this.initiator,
-                        sid: this.sid})
-                .c('content', {creator: this.initiator == this.me ? 'initiator' : 'responder',
-                        name: candidate.sdpMid
-                        })
-                .c('transport', ice)
-                .c('candidate', jcand);
-            cand.up();
-            // add fingerprint
-            if (SDPUtil.find_line(this.localSDP.media[candidate.sdpMLineIndex], 'a=fingerprint:', this.localSDP.session)) {
-                var tmp = SDPUtil.parse_fingerprint(SDPUtil.find_line(this.localSDP.media[candidate.sdpMLineIndex], 'a=fingerprint:', this.localSDP.session));
-                tmp.required = true;
-                cand.c('fingerprint').t(tmp.fingerprint);
-                delete tmp.fingerprint;
-                cand.attrs(tmp);
-                cand.up();
-            }
-            this.connection.sendIQ(cand,
-                function () {
-                    var ack = {};
-                    ack.source = 'transportinfo';
-                    $(document).trigger('ack.jingle', [self.sid, ack]);
-                },
-                function (stanza) {
-                    console.error('transport info error');
-                    var error = ($(stanza).find('error').length) ? {
-                        code: $(stanza).find('error').attr('code'),
-                        reason: $(stanza).find('error :first')[0].tagName,
-                    }:{};
-                    error.source = 'transportinfo';
-                    $(document).trigger('error.jingle', [self.sid, error]);
-                },
-            10000);
         }
     } else {
         //console.log('sendIceCandidate: last candidate.');
@@ -334,6 +256,57 @@ JingleSession.prototype.sendIceCandidate = function (candidate) {
         }
     }
 };
+
+JingleSession.prototype.sendIceCandidates = function (candidates) {
+    console.log('sendIceCandidates', candidates);
+    var cand = $iq({to: this.peerjid, type: 'set'})
+        .c('jingle', {xmlns: 'urn:xmpp:jingle:1',
+           action: 'transport-info',
+           initiator: this.initiator,
+           sid: this.sid});
+    for (var mid = 0; mid < this.localSDP.media.length; mid++) {
+        var cands = candidates.filter(function (el) { return el.sdpMLineIndex == mid; });
+        if (cands.length > 0) {
+            var ice = SDPUtil.iceparams(this.localSDP.media[mid], this.localSDP.session);
+            ice.xmlns = 'urn:xmpp:jingle:transports:ice-udp:1';
+            cand.c('content', {creator: this.initiator == this.me ? 'initiator' : 'responder',
+                   name: cands[0].sdpMid
+            }).c('transport', ice);
+            for (var i = 0; i < cands.length; i++) {
+                cand.c('candidate', SDPUtil.candidateToJingle(cands[i].candidate)).up();
+            }
+            // add fingerprint
+            if (SDPUtil.find_line(this.localSDP.media[mid], 'a=fingerprint:', this.localSDP.session)) {
+                var tmp = SDPUtil.parse_fingerprint(SDPUtil.find_line(this.localSDP.media[mid], 'a=fingerprint:', this.localSDP.session));
+                tmp.required = true;
+                cand.c('fingerprint').t(tmp.fingerprint);
+                delete tmp.fingerprint;
+                cand.attrs(tmp);
+                cand.up();
+            }
+            cand.up(); // transport
+            cand.up(); // content
+        }
+    }
+    // might merge last-candidate notification into this, but it is called alot later. See webrtc issue #2340
+    //console.log('was this the last candidate', this.lasticecandidate);
+    this.connection.sendIQ(cand,
+        function () {
+            var ack = {};
+            ack.source = 'transportinfo';
+            $(document).trigger('ack.jingle', [this.sid, ack]);
+        },
+        function (stanza) {
+            var error = ($(stanza).find('error').length) ? {
+                code: $(stanza).find('error').attr('code'),
+                reason: $(stanza).find('error :first')[0].tagName,
+            }:{};
+            error.source = 'transportinfo';
+            $(document).trigger('error.jingle', [this.sid, error]);
+        },
+    10000);
+};
+
 
 JingleSession.prototype.sendOffer = function () {
     //console.log('sendOffer...');
@@ -382,6 +355,7 @@ JingleSession.prototype.createdOffer = function (sdp) {
     sdp.sdp = this.localSDP.raw;
     this.peerconnection.setLocalDescription(sdp, 
         function () {
+            $(document).trigger('setLocalDescription.jingle', [self.sid]);
             //console.log('setLocalDescription success');
         },
         function (e) {
@@ -566,7 +540,6 @@ JingleSession.prototype.sendAnswer = function (provisional) {
 
 JingleSession.prototype.createdAnswer = function (sdp, provisional) {
     //console.log('createAnswer callback');
-    console.log(sdp);
     var self = this;
     this.localSDP = new SDP(sdp.sdp);
     //this.localSDP.mangle();
@@ -607,6 +580,7 @@ JingleSession.prototype.createdAnswer = function (sdp, provisional) {
     sdp.sdp = this.localSDP.raw;
     this.peerconnection.setLocalDescription(sdp,
         function () {
+            $(document).trigger('setLocalDescription.jingle', [self.sid]);
             //console.log('setLocalDescription success');
         },
         function (e) {
@@ -727,8 +701,8 @@ JingleSession.prototype.removeSource = function (elem) {
 
 JingleSession.prototype.modifySources = function() {
     var self = this;
-    if (!(this.addssrc.length || this.removessrc.length)) return;
     if (this.peerconnection.signalingState == 'closed') return;
+    if (!(this.addssrc.length || this.removessrc.length || this.pendingop !== null)) return;
     if (!(this.peerconnection.signalingState == 'stable' && this.peerconnection.iceConnectionState == 'connected')) {
         console.warn('modifySources not yet', this.peerconnection.signalingState, this.peerconnection.iceConnectionState);
         this.wait = true;
@@ -764,9 +738,28 @@ JingleSession.prototype.modifySources = function() {
         function() {
             self.peerconnection.createAnswer(
                 function(modifiedAnswer) {
+                    // change video direction, see https://github.com/jitsi/jitmeet/issues/41
+                    if (self.pendingop !== null) {
+                        var sdp = new SDP(modifiedAnswer.sdp);
+                        if (sdp.media.length > 1) {
+                            switch(self.pendingop) {
+                            case 'mute':
+                                sdp.media[1] = sdp.media[1].replace('a=sendrecv', 'a=recvonly');
+                                break;
+                            case 'unmute':
+                                sdp.media[1] = sdp.media[1].replace('a=recvonly', 'a=sendrecv');
+                                break;
+                            }
+                            sdp.raw = sdp.session + sdp.media.join('');
+                            modifiedAnswer.sdp = sdp.raw;
+                        }
+                        self.pendingop = null;
+                    }
+
                     self.peerconnection.setLocalDescription(modifiedAnswer,
                         function() {
                             //console.log('modified setLocalDescription ok');
+                            $(document).trigger('setLocalDescription.jingle', [self.sid]);
                         },
                         function(error) {
                             console.log('modified setLocalDescription failed');
@@ -782,6 +775,17 @@ JingleSession.prototype.modifySources = function() {
             console.log('modify failed');
         }
     );
+};
+
+// SDP-based mute by going recvonly/sendrecv
+// FIXME: should probably black out the screen as well
+JingleSession.prototype.hardMuteVideo = function (muted) {
+    this.pendingop = muted ? 'mute' : 'unmute';
+    this.modifySources();
+
+    this.connection.jingle.localStream.getVideoTracks().forEach(function (track) {
+        track.enabled = !muted;
+    });
 };
 
 JingleSession.prototype.sendMute = function (muted, content) {
