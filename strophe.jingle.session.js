@@ -40,6 +40,9 @@ function JingleSession(me, sid, connection) {
     this.pendingop = null;
 
     this.wait = true;
+
+    // XEP-0172 support, non-standard
+    this.nickname = null;
 }
 
 JingleSession.prototype.initiate = function (peerjid, isInitiator) {
@@ -223,6 +226,9 @@ JingleSession.prototype.sendIceCandidate = function (candidate) {
                    action: this.peerconnection.localDescription.type == 'offer' ? 'session-initiate' : 'session-accept',
                    initiator: this.initiator,
                    sid: this.sid});
+            if (this.nickname != null) {
+                init.c('nick', {xmlns:'http://jabber.org/protocol/nick'}).t(this.nickname).up();
+            }
             this.localSDP = new SDP(this.peerconnection.localDescription.sdp);
             this.localSDP.toJingle(init, this.initiator == this.me ? 'initiator' : 'responder');
             this.connection.sendIQ(init,
@@ -330,6 +336,9 @@ JingleSession.prototype.createdOffer = function (sdp) {
                action: 'session-initiate',
                initiator: this.initiator,
                sid: this.sid});
+        if (this.nickname != null) {
+            init.c('nick', {xmlns:'http://jabber.org/protocol/nick'}).t(this.nickname).up();
+        }
         this.localSDP.toJingle(init, this.initiator == this.me ? 'initiator' : 'responder');
         this.connection.sendIQ(init,
             function () {
