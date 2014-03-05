@@ -43,6 +43,9 @@ function JingleSession(me, sid, connection) {
 
     // XEP-0172 support, non-standard
     this.nickname = null;
+
+    // non-standard "please start muted" support for colibri/meet
+    this.startmuted = false;
 }
 
 JingleSession.prototype.initiate = function (peerjid, isInitiator) {
@@ -229,6 +232,9 @@ JingleSession.prototype.sendIceCandidate = function (candidate) {
             if (this.nickname != null) {
                 init.c('nick', {xmlns:'http://jabber.org/protocol/nick'}).t(this.nickname).up();
             }
+            if (this.startmuted) {
+                init.c('muted', {xmlns:'http://jitsi.org/protocol/meet#startmuted'}).up();
+            }
             this.localSDP = new SDP(this.peerconnection.localDescription.sdp);
             this.localSDP.toJingle(init, this.initiator == this.me ? 'initiator' : 'responder');
             this.connection.sendIQ(init,
@@ -338,6 +344,9 @@ JingleSession.prototype.createdOffer = function (sdp) {
                sid: this.sid});
         if (this.nickname != null) {
             init.c('nick', {xmlns:'http://jabber.org/protocol/nick'}).t(this.nickname).up();
+        }
+        if (this.startmuted) {
+            init.c('muted', {xmlns:'http://jitsi.org/protocol/meet#startmuted'}).up();
         }
         this.localSDP.toJingle(init, this.initiator == this.me ? 'initiator' : 'responder');
         this.connection.sendIQ(init,
@@ -550,6 +559,27 @@ JingleSession.prototype.createdAnswer = function (sdp, provisional) {
     this.localSDP = new SDP(sdp.sdp);
     //this.localSDP.mangle();
     this.usepranswer = provisional === true;
+
+    if (this.startmuted) {
+        console.log('we got a request to start muted...');
+        this.connection.jingle.localStream.getAudioTracks().forEach(function (track) {
+            track.enabled = false;
+        });
+        // doing this freezes local video, too (which probably means it should be replaced
+        // by a symbol
+        this.connection.jingle.localStream.getVideoTracks().forEach(function (track) {
+            track.enabled = false;
+        });
+
+        // set video to recvonly
+        this.localSDP.media[1] = this.localSDP.media[1].replace('a=sendrecv', 'a=recvonly');
+        // and remove a=ssrc lines. Weird things happen otherwise
+        SDPUtil.find_lines(this.localSDP.media[1], 'a=ssrc:').forEach(function (line) {
+            self.localSDP.media[1] = self.localSDP.media[1].replace(line + '\r\n', '');
+        });
+        this.localSDP.raw = this.localSDP.session + this.localSDP.media.join('');
+    }
+
     if (this.usetrickle) {
         if (!this.usepranswer) {
             var accept = $iq({to: this.peerjid,
