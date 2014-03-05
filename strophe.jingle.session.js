@@ -610,7 +610,7 @@ JingleSession.prototype.createdAnswer = function (sdp, provisional) {
             for (var i = 0; i < this.localSDP.media.length; i++) {
                 this.localSDP.media[i] = this.localSDP.media[i].replace('a=sendrecv\r\n', 'a=inactive\r\n');
             }
-            this.localSDP.raw = this.localSDP.session + '\r\n' + this.localSDP.media.join('');
+            this.localSDP.raw = this.localSDP.session + this.localSDP.media.join('');
         }
     }
     sdp.sdp = this.localSDP.raw;
