@@ -91,8 +91,12 @@ Strophe.addConnectionPlugin('jingle', {
             sess.ice_config = this.ice_config;
 
             sess.initiate($(iq).attr('from'), false);
-            // FIXME: setRemoteDescription should only be done when this call is to be accepted
             sess.setRemoteDescription($(iq).find('>jingle'), 'offer');
+
+            if ($(iq).find('>jingle>muted[xmlns="http://jitsi.org/protocol/meet#startmuted"]').length) {
+                console.log('got a request to start muted');
+                sess.startmuted = true;
+            }
 
             this.sessions[sess.sid] = sess;
             this.jid2session[sess.peerjid] = sess;
