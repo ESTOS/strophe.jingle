@@ -216,7 +216,7 @@ JingleSession.prototype.sendIceCandidate = function (candidate) {
                 this.drip_container.push(event.candidate);
                 return;
             } else {
-                self.sendIceCandidate([event.candidate]);
+                self.sendIceCandidates([event.candidate]);
             }
         }
     } else {
