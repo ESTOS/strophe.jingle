@@ -46,6 +46,9 @@ function JingleSession(me, sid, connection) {
 
     // non-standard "please start muted" support for colibri/meet
     this.startmuted = false;
+
+    // Filter for testcases with ICE Candidates
+    this.filter_candidates = null;
 }
 
 JingleSession.prototype.initiate = function (peerjid, isInitiator) {
@@ -202,27 +205,32 @@ JingleSession.prototype.sendIceCandidate = function (candidate) {
             this.hadturncandidate = true;
         }
 
-        if (this.usetrickle) {
-            if (this.usedrip) {
-                if (this.drip_container.length === 0) {
-                    // start 20ms callout
-                    window.setTimeout(function () {
-                        if (self.drip_container.length === 0) return;
-                        self.sendIceCandidates(self.drip_container);
-                        self.drip_container = [];
-                    }, 20);
+        if(this.filter_candidates === null || jcand.type === this.filter_candidates) {
+            if (this.usetrickle) {
+                console.log('sendIceCandidate using trickle');
+                if (this.usedrip) {
+                    if (this.drip_container.length === 0) {
+                        // start 20ms callout
+                        window.setTimeout(function () {
+                            console.log('sending drip container');
+                            if (self.drip_container.length === 0) return;
+                            self.sendIceCandidates(self.drip_container);
+                            self.drip_container = [];
+                        }, 20);
 
+                    }
+                    this.drip_container.push(event.candidate);
+                    return;
+                } else {
+                    console.log('sending single candidate');
+                    self.sendIceCandidates([event.candidate]);
                 }
-                this.drip_container.push(event.candidate);
-                return;
-            } else {
-                self.sendIceCandidates([event.candidate]);
             }
         }
     } else {
-        //console.log('sendIceCandidate: last candidate.');
+        console.log('sendIceCandidate: last candidate...');
         if (!this.usetrickle) {
-            //console.log('should send full offer now...');
+            console.log('should send full offer now...');
             var init = $iq({to: this.peerjid,
                        type: 'set'})
                 .c('jingle', {xmlns: 'urn:xmpp:jingle:1',
@@ -237,9 +245,10 @@ JingleSession.prototype.sendIceCandidate = function (candidate) {
             }
             this.localSDP = new SDP(this.peerconnection.localDescription.sdp);
             this.localSDP.toJingle(init, this.initiator == this.me ? 'initiator' : 'responder');
+            console.log('try to send ack(offer)...');
             this.connection.sendIQ(init,
                 function () {
-                    //console.log('session initiate ack');
+                    console.log('Sent session initiate (ACK, offer)...');
                     var ack = {};
                     ack.source = 'offer';
                     $(document).trigger('ack.jingle', [self.sid, ack]);
@@ -261,6 +270,7 @@ JingleSession.prototype.sendIceCandidate = function (candidate) {
         console.log('Have we encountered any relay candidates? ' + this.hadturncandidate);
 
         if (!(this.hadstuncandidate || this.hadturncandidate) && this.peerconnection.signalingState != 'closed') {
+            console.log('no candidates found!');
             $(document).trigger('nostuncandidates.jingle', [this.sid]);
         }
     }
@@ -299,10 +309,12 @@ JingleSession.prototype.sendIceCandidates = function (candidates) {
     }
     // might merge last-candidate notification into this, but it is called alot later. See webrtc issue #2340
     //console.log('was this the last candidate', this.lasticecandidate);
+    console.log('try to send ack(transportinfo)...');
     this.connection.sendIQ(cand,
         function () {
             var ack = {};
             ack.source = 'transportinfo';
+            console.log('Sent session initiate (ACK, transportinfo)...');
             $(document).trigger('ack.jingle', [this.sid, ack]);
         },
         function (stanza) {
