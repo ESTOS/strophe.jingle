@@ -236,7 +236,7 @@ function setupRTC() {
     var RTC = null;
     if (navigator.mozGetUserMedia) {
         console.log('This appears to be Firefox');
-        var version = parseInt(navigator.userAgent.match(/Firefox\/([0-9]+)\./)[1], 10);
+        var version = navigator.userAgent.match(/Firefox/) ? parseInt(navigator.userAgent.match(/Firefox\/([0-9]+)\./)[1], 10) : 0;
         if (version >= 22) {
             RTC = {
                 peerconnection: mozRTCPeerConnection,
