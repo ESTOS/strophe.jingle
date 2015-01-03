@@ -65,7 +65,7 @@ function TraceablePeerConnection(ice_config, constraints) {
         if (self.ondatachannel !== null) {
             self.ondatachannel(event);
         }
-    }
+    };
     if (!navigator.mozGetUserMedia) {
         this.statsinterval = window.setInterval(function() {
             self.peerconnection.getStats(function(stats) {
@@ -96,11 +96,11 @@ function TraceablePeerConnection(ice_config, constraints) {
 
         }, 1000);
     }
-};
+}
 
 dumpSDP = function(description) {
     return 'type: ' + description.type + '\r\n' + description.sdp;
-}
+};
 
 if (TraceablePeerConnection.prototype.__defineGetter__ !== undefined) {
     TraceablePeerConnection.prototype.__defineGetter__('signalingState', function() { return this.peerconnection.signalingState; });
@@ -122,7 +122,7 @@ TraceablePeerConnection.prototype.removeStream = function (stream) {
 TraceablePeerConnection.prototype.createDataChannel = function (label, opts) {
     this.trace('createDataChannel', label, opts);
     this.peerconnection.createDataChannel(label, opts);
-}
+};
 
 TraceablePeerConnection.prototype.setLocalDescription = function (description, successCallback, failureCallback) {
     var self = this;
