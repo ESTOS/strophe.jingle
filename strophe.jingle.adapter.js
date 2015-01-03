@@ -226,21 +226,19 @@ TraceablePeerConnection.prototype.addIceCandidate = function (candidate, success
     var self = this;
     this.trace('addIceCandidate', JSON.stringify(candidate, null, ' '));
     this.peerconnection.addIceCandidate(candidate);
-    /* maybe later
     this.peerconnection.addIceCandidate(candidate, 
         function () {                                
             self.trace('addIceCandidateOnSuccess');
-            successCallback();
+            if (successCallback) successCallback();
         },
         function (err) {
             self.trace('addIceCandidateOnFailure', err);
-            failureCallback(err);
+            if (failureCallback) failureCallback(err);
         }
     );
-    */
 };
 
-TraceablePeerConnection.prototype.getStats = function(callback, errback) {
+TraceablePeerConnection.prototype.getStats = function(callback) {
     if (navigator.mozGetUserMedia) {
         // ignore for now...
     } else {
@@ -251,7 +249,7 @@ TraceablePeerConnection.prototype.getStats = function(callback, errback) {
 // mozilla chrome compat layer -- very similar to adapter.js
 function setupRTC() {
     var RTC = null;
-    if (navigator.mozGetUserMedia) {
+    if (navigator.mozGetUserMedia && mozRTCPeerConnection) {
         console.log('This appears to be Firefox');
         var version = navigator.userAgent.match(/Firefox/) ? parseInt(navigator.userAgent.match(/Firefox\/([0-9]+)\./)[1], 10) : 0;
         if (version >= 22) {
@@ -265,10 +263,6 @@ function setupRTC() {
                 },
                 pc_constraints: {}
             };
-            if (!MediaStream.prototype.getVideoTracks)
-                MediaStream.prototype.getVideoTracks = function () { return []; };
-            if (!MediaStream.prototype.getAudioTracks)
-                MediaStream.prototype.getAudioTracks = function () { return []; };
             RTCSessionDescription = mozRTCSessionDescription;
             RTCIceCandidate = mozRTCIceCandidate;
         }
@@ -284,19 +278,6 @@ function setupRTC() {
             // DTLS should now be enabled by default but..
             pc_constraints: {'optional': [{'DtlsSrtpKeyAgreement': 'true'}]} 
         };
-        if (navigator.userAgent.indexOf('Android') != -1) {
-            RTC.pc_constraints = {}; // disable DTLS on Android
-        }
-        if (!webkitMediaStream.prototype.getVideoTracks) {
-            webkitMediaStream.prototype.getVideoTracks = function () {
-                return this.videoTracks;
-            };
-        }
-        if (!webkitMediaStream.prototype.getAudioTracks) {
-            webkitMediaStream.prototype.getAudioTracks = function () {
-                return this.audioTracks;
-            };
-        }
     }
     if (RTC === null) {
         try { console.log('Browser does not appear to be WebRTC-capable'); } catch (e) { }
