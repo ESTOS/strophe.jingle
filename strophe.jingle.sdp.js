@@ -49,7 +49,8 @@ SDP.prototype.removeSessionLines = function(prefix) {
     });
     this.raw = this.session + this.media.join('');
     return lines;
-}
+};
+
 // remove lines matching prefix from a media section specified by mediaindex
 // TODO: non-numeric mediaindex could match mid
 SDP.prototype.removeMediaLines = function(mediaindex, prefix) {
@@ -60,7 +61,7 @@ SDP.prototype.removeMediaLines = function(mediaindex, prefix) {
     });
     this.raw = this.session + this.media.join('');
     return lines;
-}
+};
 
 // add content's to a jingle element
 SDP.prototype.toJingle = function (elem, thecreator) {
@@ -264,7 +265,7 @@ SDP.prototype.TransportToJingle = function (mediaindex, elem) {
         }
     }
     elem.up(); // end of transport
-}
+};
 
 SDP.prototype.RtcpFbToJingle = function (mediaindex, elem, payloadtype) { // XEP-0293
     var lines = SDPUtil.find_lines(this.media[mediaindex], 'a=rtcp-fb:' + payloadtype);

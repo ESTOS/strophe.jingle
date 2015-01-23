@@ -237,7 +237,7 @@ JingleSession.prototype.sendIceCandidate = function (candidate) {
                    action: this.peerconnection.localDescription.type == 'offer' ? 'session-initiate' : 'session-accept',
                    initiator: this.initiator,
                    sid: this.sid});
-            if (this.nickname != null) {
+            if (this.nickname !== null) {
                 init.c('nick', {xmlns:'http://jabber.org/protocol/nick'}).t(this.nickname).up();
             }
             if (this.startmuted) {
@@ -355,7 +355,7 @@ JingleSession.prototype.createdOffer = function (sdp) {
                action: 'session-initiate',
                initiator: this.initiator,
                sid: this.sid});
-        if (this.nickname != null) {
+        if (this.nickname !== null) {
             init.c('nick', {xmlns:'http://jabber.org/protocol/nick'}).t(this.nickname).up();
         }
         if (this.startmuted) {
