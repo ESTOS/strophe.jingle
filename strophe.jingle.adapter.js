@@ -102,28 +102,12 @@ dumpSDP = function(description) {
     return 'type: ' + description.type + '\r\n' + description.sdp;
 };
 
-Object.defineProperty(TraceablePeerConnection.prototype, 'signalingState', {
-    get: function () {
-        return this.peerconnection.signalingState;
-    }
-});
-
-Object.defineProperty(PeerConnection.prototype, 'iceConnectionState', {
-    get: function () {
-        return this.pc.iceConnectionState;
-    }
-});
-
-Object.defineProperty(PeerConnection.prototype, 'localDescription', {
-    get: function () {
-        return this.peerconnection.localDescription;
-    }
-});
-
-Object.defineProperty(PeerConnection.prototype, 'remoteDescription', {
-    get: function () {
-        return this.peerconnection.remoteDescription;
-    }
+['signalingState', 'iceConnectionState', 'localDescription', 'remoteDescription'].forEach(function (prop) {
+    Object.defineProperty(TraceablePeerConnection.prototype, prop, {
+        get: function () {
+            return this.peerconnection[prop]
+        }
+    });
 });
 
 TraceablePeerConnection.prototype.addStream = function (stream) {
