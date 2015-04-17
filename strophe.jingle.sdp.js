@@ -753,8 +753,7 @@ SDPUtil = {
     },
     candidateFromJingle: function (cand) {
         var parts = [
-            'a=candidate',
-            cand.getAttribute('foundation'),
+            'a=candidate:' + cand.getAttribute('foundation'),
             cand.getAttribute('component'),
             cand.getAttribute('protocol'),
             cand.getAttribute('priority'),
