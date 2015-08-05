@@ -105,7 +105,7 @@ dumpSDP = function(description) {
 ['signalingState', 'iceConnectionState', 'localDescription', 'remoteDescription'].forEach(function (prop) {
     Object.defineProperty(TraceablePeerConnection.prototype, prop, {
         get: function () {
-            return this.peerconnection[prop]
+            return this.peerconnection[prop];
         }
     });
 });

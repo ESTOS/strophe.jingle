@@ -229,8 +229,7 @@ SDP.prototype.TransportToJingle = function (mediaindex, elem) {
     var fingerprints = SDPUtil.find_lines(this.media[mediaindex], 'a=fingerprint:', this.session);
     fingerprints.forEach(function(line) {
         tmp = SDPUtil.parse_fingerprint(line);
-        tmp.xmlns = 'urn:xmpp:tmp:jingle:apps:dtls:0';
-        // tmp.xmlns = 'urn:xmpp:jingle:apps:dtls:0'; -- FIXME: update receivers first
+        tmp.xmlns = 'urn:xmpp:jingle:apps:dtls:0';
         elem.c('fingerprint').t(tmp.fingerprint);
         delete tmp.fingerprint;
         line = SDPUtil.find_line(self.media[mediaindex], 'a=setup:', self.session);
@@ -587,7 +586,9 @@ SDPUtil = {
                 candidate.generation = elems[i + 1];
                 break;
             case 'tcptype':
-                candidate.tcptype = elems[i + 1];
+                if (candidate.protocol.toLowerCase() === 'tcp') {
+                    candidate.tcptype = elems[i + 1];
+                }
                 break;
             default: // TODO
                 console.log('parse_icecandidate not translating "' + elems[i] + '" = "' + elems[i + 1] + '"');
